@@ -1,6 +1,6 @@
 {
   "name": "unity-hub-cli",
-  "version": "1.0.0",
+  "version": "0.1.0",
   "description": "A CLI tool that reads Unity Hub's projects and launches Unity Editor with an interactive TUI",
   "main": "dist/index.js",
   "scripts": {
@@ -17,7 +17,15 @@
     "type": "git",
     "url": "https://github.com/hatayama/UnityHubCli.git"
   },
-  "keywords": ["unity", "unity-hub", "cli", "tui", "ink", "terminal", "interactive"],
+  "keywords": [
+    "unity",
+    "unity-hub",
+    "cli",
+    "tui",
+    "ink",
+    "terminal",
+    "interactive"
+  ],
   "author": "masamichi hatayama",
   "license": "MIT",
   "type": "module",
