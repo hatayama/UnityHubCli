@@ -17,7 +17,15 @@
     "type": "git",
     "url": "https://github.com/hatayama/UnityHubCli.git"
   },
-  "keywords": ["unity", "unity-hub", "cli", "tui", "ink", "terminal", "interactive"],
+  "keywords": [
+    "unity",
+    "unity-hub",
+    "cli",
+    "tui",
+    "ink",
+    "terminal",
+    "interactive"
+  ],
   "author": "masamichi hatayama",
   "license": "MIT",
   "type": "module",
