@@ -1,15 +1,8 @@
 {
-  "bootstrap-sha": "",
-  "plugins": [
-    {
-      "type": "node-workspace",
-      "workspace-glob": "package.json"
-    }
-  ],
   "packages": {
     ".": {
-      "package-name": "unityhubcli",
-      "release-type": "node"
+      "release-type": "node",
+      "package-name": "unity-hub-cli"
     }
   }
 }

@@ -1,6 +1,8 @@
 # UnityHub CLI
 
-A CLI tool that reads Unity Hub's `projects-v1.json`, displays projects in an Ink-based TUI, allows navigation with arrow keys/`j`/`k`, and launches Unity Editor by pressing Enter.
+[日本語版はこちら / Japanese version](README_ja.md)
+
+A CLI tool that displays the same content as Unity Hub in an Ink-based TUI, allows navigation with arrow keys/`j`/`k`, and launches Unity Editor by pressing `o`.
 
 ## Requirements
 
@@ -83,7 +85,7 @@ npm audit signatures
 ## Controls
 
 - Arrow keys / `j` / `k`: Navigate selection
- - `o`: Launch selected project in Unity
+- `o`: Launch selected project in Unity
 - Ctrl + C (twice): Exit
 
 The display includes Git branch (if present), Unity version, project path, and last modified time (`lastModified`).

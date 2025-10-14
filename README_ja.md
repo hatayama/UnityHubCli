@@ -1,6 +1,8 @@
 # UnityHub CLI
 
-Unity Hubの`projects-v1.json`を読み取り、InkベースのTUIで一覧表示し、上下キー/`j`/`k`でプロジェクトを選択してEnterでUnity Editorを起動するCLIです。
+[English version](README.md)
+
+Unity Hubと同じ内容をInkベースのTUIで表示し、上下キー/`j`/`k`でプロジェクトを選択して`o`でUnity Editorを起動するCLIです。
 
 ## 必要環境
 
