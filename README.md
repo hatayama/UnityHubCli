@@ -83,7 +83,7 @@ npm audit signatures
 ## Controls
 
 - Arrow keys / `j` / `k`: Navigate selection
-- Enter: Launch selected project in Unity
+ - `o`: Launch selected project in Unity
 - Ctrl + C (twice): Exit
 
 The display includes Git branch (if present), Unity version, project path, and last modified time (`lastModified`).

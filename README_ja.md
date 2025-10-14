@@ -83,7 +83,7 @@ npm audit signatures
 ## 操作方法
 
 - 上下矢印 / `j` / `k`: 選択移動
-- Enter: 選択中のプロジェクトをUnityで起動
+ - `o`: 選択中のプロジェクトをUnityで起動
 - Ctrl + C（2回）: 終了
 
 表示内容にはGitブランチ（存在する場合）、Unityバージョン、プロジェクトパス、最終更新日時（`lastModified`）が含まれます。
