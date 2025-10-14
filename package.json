@@ -1,5 +1,5 @@
 {
-  "name": "unityhubcli",
+  "name": "unity-hub-cli",
   "version": "1.0.0",
   "description": "",
   "main": "index.js",
@@ -22,7 +22,7 @@
   "license": "ISC",
   "type": "module",
   "bin": {
-    "unityhub-cli": "dist/index.js"
+    "unity-hub-cli": "dist/index.js"
   },
   "dependencies": {
     "ink": "^4.4.1",

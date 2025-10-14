@@ -28,7 +28,7 @@ npm run build
 ビルド後、`dist/index.js` が生成されます。npx経由で直接実行も可能です。
 
 ```bash
-npx unityhubcli
+npx unity-hub-cli
 # または
 node dist/index.js
 ```

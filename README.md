@@ -28,7 +28,7 @@ npm run build
 After building, `dist/index.js` will be generated. You can also run it directly via npx.
 
 ```bash
-npx unityhubcli
+npx unity-hub-cli
 # or
 node dist/index.js
 ```
