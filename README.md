@@ -48,6 +48,7 @@ Version and release management is automated using release-please and GitHub Acti
 - `.github/workflows/release-please.yml` runs on push to `main` or manual trigger
 - The action references `release-please-config.json` and `.release-please-manifest.json` to create release PRs and tags
 - When a PR is merged, GitHub Releases and changelog are automatically updated
+- **npm publish is automated with provenance** for supply chain security
 
 ### Initial Setup Notes
 
@@ -57,6 +58,27 @@ Version and release management is automated using release-please and GitHub Acti
 ### Manual Execution
 
 You can manually trigger the `release-please` workflow from the Actions tab by selecting `Run workflow`
+
+## Security
+
+This package implements multiple security measures to protect against supply chain attacks:
+
+1. **Automated Publishing with Provenance**: All npm releases are published via GitHub Actions with `--provenance` flag, providing cryptographic proof of the build environment
+2. **Minimal Dependencies**: Only 2 runtime dependencies (`ink` and `react`), both from highly trusted sources
+3. **Locked Dependencies**: `package-lock.json` is committed to ensure reproducible builds
+4. **Regular Security Audits**: Dependencies are regularly checked with `npm audit`
+
+### Verifying Package Authenticity
+
+You can verify the authenticity of published packages:
+
+```bash
+# Check provenance information
+npm view unity-hub-cli --json | jq .dist.attestations
+
+# Verify package integrity
+npm audit signatures
+```
 
 ## Controls
 

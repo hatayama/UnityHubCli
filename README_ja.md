@@ -48,6 +48,7 @@ release-please と GitHub Actions でバージョン/リリース管理を自動
 - `main` への push または手動トリガーで `.github/workflows/release-please.yml` が実行される
 - アクションは `release-please-config.json` と `.release-please-manifest.json` を参照し、リリース PR の作成やタグ付けを行う
 - PR がマージされると GitHub Releases と changelog の更新が行われる
+- **npm への公開は provenance 付きで自動化されています**（サプライチェーン攻撃対策）
 
 ### 初回実行時のメモ
 
@@ -57,6 +58,27 @@ release-please と GitHub Actions でバージョン/リリース管理を自動
 ### 手動実行
 
 Actions タブから `release-please` ワークフローを選び、`Run workflow` で手動起動できる
+
+## セキュリティ
+
+このパッケージは、サプライチェーン攻撃から保護するために複数のセキュリティ対策を実装しています：
+
+1. **Provenance 付き自動公開**: すべての npm リリースは GitHub Actions 経由で `--provenance` フラグ付きで公開され、ビルド環境の暗号学的証明を提供します
+2. **最小限の依存関係**: ランタイム依存は 2 つのみ（`ink` と `react`）で、いずれも信頼性の高いソースからのものです
+3. **依存関係の固定**: `package-lock.json` をコミットすることで、再現可能なビルドを保証します
+4. **定期的なセキュリティ監査**: 依存関係は `npm audit` で定期的にチェックされます
+
+### パッケージの真正性検証
+
+公開されたパッケージの真正性を検証できます：
+
+```bash
+# provenance 情報の確認
+npm view unity-hub-cli --json | jq .dist.attestations
+
+# パッケージ整合性の検証
+npm audit signatures
+```
 
 ## 操作方法
 
