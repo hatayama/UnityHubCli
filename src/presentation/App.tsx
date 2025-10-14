@@ -24,15 +24,15 @@ const formatProjectName = (
   useGitRootName: boolean,
 ): string => {
   if (!useGitRootName) {
-    return `${project.title} (${project.version.value})`;
+    return project.title;
   }
 
   const rootFolder = extractRootFolder(repository);
   if (!rootFolder) {
-    return `${project.title} (${project.version.value})`;
+    return project.title;
   }
 
-  return `${rootFolder} (${project.version.value})`;
+  return rootFolder;
 };
 
 const formatBranch = (branch?: GitBranch): string => {
@@ -43,6 +43,64 @@ const formatBranch = (branch?: GitBranch): string => {
     return branch.name;
   }
   return `detached@${branch.sha}`;
+};
+
+const formatRelativeTime = (lastModified?: Date): string | undefined => {
+  if (!lastModified) {
+    return undefined;
+  }
+
+  const now: Date = new Date();
+  const diffMillis: number = now.getTime() - lastModified.getTime();
+  if (Number.isNaN(diffMillis)) {
+    return undefined;
+  }
+
+  const safeMillis: number = Math.max(0, diffMillis);
+  const secondsPerMinute: number = 60;
+  const secondsPerHour: number = secondsPerMinute * 60;
+  const secondsPerDay: number = secondsPerHour * 24;
+  const secondsPerMonth: number = secondsPerDay * 30;
+  const secondsPerYear: number = secondsPerDay * 365;
+  const totalSeconds: number = Math.floor(safeMillis / 1000);
+
+  if (totalSeconds < 45) {
+    return 'a few seconds ago';
+  }
+  if (totalSeconds < 45 * secondsPerMinute) {
+    const minutes: number = Math.max(1, Math.floor(totalSeconds / secondsPerMinute));
+    const suffix: string = minutes === 1 ? 'minute' : 'minutes';
+    return `${minutes} ${suffix} ago`;
+  }
+  if (totalSeconds < 30 * secondsPerHour) {
+    const hours: number = Math.max(1, Math.floor(totalSeconds / secondsPerHour));
+    const suffix: string = hours === 1 ? 'hour' : 'hours';
+    return `${hours} ${suffix} ago`;
+  }
+  if (totalSeconds < secondsPerMonth) {
+    const days: number = Math.max(1, Math.floor(totalSeconds / secondsPerDay));
+    const suffix: string = days === 1 ? 'day' : 'days';
+    return `${days} ${suffix} ago`;
+  }
+  if (totalSeconds < secondsPerYear) {
+    const months: number = Math.max(1, Math.floor(totalSeconds / secondsPerMonth));
+    const suffix: string = months === 1 ? 'month' : 'months';
+    return `${months} ${suffix} ago`;
+  }
+
+  const years: number = Math.max(1, Math.floor(totalSeconds / secondsPerYear));
+  const suffix: string = years === 1 ? 'year' : 'years';
+  return `${years} ${suffix} ago`;
+};
+
+const UPDATED_LABEL = 'Last:';
+
+const formatUpdatedText = (lastModified?: Date): string | undefined => {
+  const relativeTime: string | undefined = formatRelativeTime(lastModified);
+  if (!relativeTime) {
+    return undefined;
+  }
+  return `${UPDATED_LABEL} ${relativeTime}`;
 };
 
 const homeDirectory = process.env.HOME ?? '';
@@ -299,7 +357,9 @@ export const App: React.FC<AppProps> = ({
       const rowIndex = startIndex + offset;
       const isSelected = rowIndex === index;
       const arrow: string = isSelected ? '>' : ' ';
-      const titleLine: string = formatProjectName(project, repository, useGitRootName);
+      const projectName: string = formatProjectName(project, repository, useGitRootName);
+      const versionLabel: string = `(${project.version.value})`;
+      const updatedText: string | undefined = formatUpdatedText(project.lastModified);
       const pathLine: string = shortenHomePath(project.path);
       const branchLine: string = formatBranch(repository?.branch);
       const baseScrollbarIndex = offset * linesPerProject;
@@ -310,18 +370,17 @@ export const App: React.FC<AppProps> = ({
         : ' ';
       const spacerScrollbar = scrollbarChars[baseScrollbarIndex + linesPerProject - 1] ?? ' ';
 
-      const versionStart = titleLine.indexOf('(');
-      const versionText = versionStart >= 0 ? titleLine.slice(versionStart) : '';
-      const nameText = versionStart >= 0 ? titleLine.slice(0, versionStart).trimEnd() : titleLine;
-
       return (
         <Box key={project.id} flexDirection="row">
           <Box flexGrow={1} flexDirection="column">
             <Text>
               <Text color={isSelected ? 'green' : PROJECT_COLOR} bold>
-                {arrow} {nameText}
+                {arrow} {projectName}
               </Text>
-              {versionText ? <Text color={isSelected ? 'green' : undefined}> {versionText}</Text> : null}
+              <Text color={isSelected ? 'green' : undefined}> {versionLabel}</Text>
+              {updatedText ? (
+                <Text color={isSelected ? 'green' : undefined}>{`  ${updatedText}`}</Text>
+              ) : null}
             </Text>
             {showBranch ? (
               <Text color={isSelected ? 'green' : BRANCH_COLOR}>
