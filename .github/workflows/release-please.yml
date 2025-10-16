@@ -9,37 +9,16 @@ on:
 permissions:
   contents: write
   pull-requests: write
+  id-token: write
 
 concurrency:
   group: release-please-${{ github.ref }}
   cancel-in-progress: false
 
 jobs:
-  release-please:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: google-github-actions/release-please-action@v4
-        with:
-          command: manifest
-
-name: release-please
-
-on:
-  push:
-    branches:
-      - main
-  workflow_dispatch:
-
-jobs:
   release:
     name: release-please
     runs-on: ubuntu-latest
-
-    permissions:
-      contents: write
-      pull-requests: write
-      id-token: write
-
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
