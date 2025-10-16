@@ -1,3 +1,4 @@
+import clipboard from 'clipboardy';
 import { Box, Text, useApp, useInput, useStdout } from 'ink';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 
@@ -106,7 +107,7 @@ const formatUpdatedText = (lastModified?: Date): string | undefined => {
 const homeDirectory = process.env.HOME ?? '';
 const homePrefix = homeDirectory ? `${homeDirectory}/` : '';
 const minimumVisibleProjectCount: number = 4;
-const defaultHintMessage = 'Move with arrows or j/k · Launch with o · Exit with Ctrl+C twice';
+const defaultHintMessage = 'Move with arrows or j/k · Launch & exit with o · Copy cd path with c · Exit with Ctrl+C twice';
 const PROJECT_COLOR = '#abd8e7';
 const BRANCH_COLOR = '#e3839c';
 const PATH_COLOR = '#719bd8';
@@ -122,6 +123,11 @@ const shortenHomePath = (targetPath: string): string => {
     return `~/${targetPath.slice(homePrefix.length)}`;
   }
   return targetPath;
+};
+
+const buildCdCommand = (targetPath: string): string => {
+  const escapedPath = targetPath.replaceAll('"', '\\"');
+  return `cd "${escapedPath}"`;
 };
 
 type AppProps = {
@@ -143,7 +149,7 @@ export const App: React.FC<AppProps> = ({
   const { stdout } = useStdout();
   const [visibleCount, setVisibleCount] = useState<number>(minimumVisibleProjectCount);
   const [index, setIndex] = useState(0);
-  const [hint, setHint] = useState<string>('Move with j/k · Launch with o · Exit with Ctrl+C twice');
+  const [hint, setHint] = useState<string>(defaultHintMessage);
   const [pendingExit, setPendingExit] = useState(false);
   const linesPerProject = (showBranch ? 1 : 0) + (showPath ? 1 : 0) + 2;
 
@@ -247,18 +253,58 @@ export const App: React.FC<AppProps> = ({
     [sortedProjects.length],
   );
 
-  const launchSelected = useCallback(async () => {
-    const project = sortedProjects[index]?.project;
-    if (!project) {
+  const copyProjectPath = useCallback(() => {
+    const projectPath = sortedProjects[index]?.project.path;
+    if (!projectPath) {
+      setHint('No project to copy');
+      setTimeout(() => {
+        setHint(defaultHintMessage);
+      }, 2000);
+      return;
+    }
+
+    try {
+      const command = buildCdCommand(projectPath);
+      clipboard.writeSync(command);
+      const displayPath = shortenHomePath(projectPath);
+      setHint(`Copied command: cd "${displayPath}"`);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      setHint(`Failed to copy: ${message}`);
+    }
+
+    setTimeout(() => {
+      setHint(defaultHintMessage);
+    }, 2000);
+  }, [index, sortedProjects]);
+
+  const launchSelectedAndExit = useCallback(async () => {
+    const projectView = sortedProjects[index];
+    if (!projectView) {
+      setHint('No project to launch');
+      setTimeout(() => {
+        setHint(defaultHintMessage);
+      }, 2000);
+      return;
+    }
+
+    const { project } = projectView;
+    try {
+      const command = buildCdCommand(project.path);
+      clipboard.writeSync(command);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      setHint(`Failed to copy: ${message}`);
+      setTimeout(() => {
+        setHint(defaultHintMessage);
+      }, 3000);
       return;
     }
 
     try {
       await onLaunch(project);
-      setHint(`Launched Unity: ${project.title}`);
-      setTimeout(() => {
-        setHint(defaultHintMessage);
-      }, 2000);
+      stdout?.write('\u001B[2J\u001B[H');
+      exit();
     } catch (error) {
       if (error instanceof LaunchCancelledError) {
         setHint('Launch cancelled');
@@ -267,13 +313,14 @@ export const App: React.FC<AppProps> = ({
         }, 3000);
         return;
       }
+
       const message = error instanceof Error ? error.message : String(error);
       setHint(`Failed to launch: ${message}`);
       setTimeout(() => {
         setHint(defaultHintMessage);
       }, 3000);
     }
-  }, [index, onLaunch, sortedProjects]);
+  }, [exit, index, onLaunch, sortedProjects, stdout]);
 
   useInput((input, key) => {
     if (input === 'j' || key.downArrow) {
@@ -285,7 +332,11 @@ export const App: React.FC<AppProps> = ({
     }
 
     if (input === 'o') {
-      void launchSelected();
+      void launchSelectedAndExit();
+    }
+
+    if (input === 'c') {
+      copyProjectPath();
     }
   });
 
