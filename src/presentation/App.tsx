@@ -107,7 +107,8 @@ const formatUpdatedText = (lastModified?: Date): string | undefined => {
 const homeDirectory = process.env.HOME ?? '';
 const homePrefix = homeDirectory ? `${homeDirectory}/` : '';
 const minimumVisibleProjectCount: number = 4;
-const defaultHintMessage = 'Move with arrows or j/k · Launch & exit with o · Copy cd path with c · Exit with Ctrl+C twice';
+const defaultHintMessage =
+  'Move with arrows or j/k · Launch with o · Copy cd path with c · Exit with Ctrl+C';
 const PROJECT_COLOR = '#abd8e7';
 const BRANCH_COLOR = '#e3839c';
 const PATH_COLOR = '#719bd8';
@@ -150,7 +151,6 @@ export const App: React.FC<AppProps> = ({
   const [visibleCount, setVisibleCount] = useState<number>(minimumVisibleProjectCount);
   const [index, setIndex] = useState(0);
   const [hint, setHint] = useState<string>(defaultHintMessage);
-  const [pendingExit, setPendingExit] = useState(false);
   const [windowStart, setWindowStart] = useState(0);
   const linesPerProject = (showBranch ? 1 : 0) + (showPath ? 1 : 0) + 2;
 
@@ -190,15 +190,6 @@ export const App: React.FC<AppProps> = ({
 
   useEffect(() => {
     const handleSigint = () => {
-      if (!pendingExit) {
-        setPendingExit(true);
-        setHint('Press Ctrl+C again to exit');
-        setTimeout(() => {
-          setPendingExit(false);
-          setHint(defaultHintMessage);
-        }, 2000);
-        return;
-      }
       exit();
     };
 
@@ -207,7 +198,7 @@ export const App: React.FC<AppProps> = ({
     return () => {
       process.off('SIGINT', handleSigint);
     };
-  }, [exit, pendingExit]);
+  }, [exit]);
 
   useEffect(() => {
     const updateVisibleCount = () => {
@@ -339,7 +330,7 @@ export const App: React.FC<AppProps> = ({
     }, 2000);
   }, [index, sortedProjects]);
 
-  const launchSelectedAndExit = useCallback(async () => {
+  const launchSelected = useCallback(async () => {
     const projectView = sortedProjects[index];
     if (!projectView) {
       setHint('No project to launch');
@@ -364,8 +355,10 @@ export const App: React.FC<AppProps> = ({
 
     try {
       await onLaunch(project);
-      stdout?.write('\u001B[2J\u001B[H');
-      exit();
+      setHint(`Launched: ${project.title}`);
+      setTimeout(() => {
+        setHint(defaultHintMessage);
+      }, 3000);
     } catch (error) {
       if (error instanceof LaunchCancelledError) {
         setHint('Launch cancelled');
@@ -381,7 +374,7 @@ export const App: React.FC<AppProps> = ({
         setHint(defaultHintMessage);
       }, 3000);
     }
-  }, [exit, index, onLaunch, sortedProjects, stdout]);
+  }, [index, onLaunch, sortedProjects]);
 
   useInput((input, key) => {
     if (input === 'j' || key.downArrow) {
@@ -393,7 +386,7 @@ export const App: React.FC<AppProps> = ({
     }
 
     if (input === 'o') {
-      void launchSelectedAndExit();
+      void launchSelected();
     }
 
     if (input === 'c') {
