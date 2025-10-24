@@ -34,7 +34,7 @@ const bootstrap = async (): Promise<void> => {
 
   try {
     const projects = await listProjectsUseCase.execute();
-    render(
+    const { waitUntilExit } = render(
       <App
         projects={projects}
         onLaunch={(project) => launchProjectUseCase.execute(project)}
@@ -43,6 +43,8 @@ const bootstrap = async (): Promise<void> => {
         showPath={showPath}
       />,
     );
+    await waitUntilExit();
+    process.stdout.write('\x1B[2J\x1B[3J\x1B[H');
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
     // eslint-disable-next-line no-console
