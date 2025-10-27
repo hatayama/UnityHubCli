@@ -11,7 +11,7 @@ import type { UnityProcess } from '../domain/models.js';
 const execFileAsync = promisify(execFile);
 
 const UNITY_EXECUTABLE_PATTERN = /Unity\.app\/Contents\/MacOS\/Unity/i;
-const PROJECT_PATH_PATTERN = /-(?:projectPath|projectpath)\s+("[^"]+"|'[^']+'|[^\s"']+)/i;
+const PROJECT_PATH_PATTERN = /-(?:projectPath|projectpath)(?:=|\s+)("[^"]+"|'[^']+'|[^\s"']+)/i;
 const PROCESS_LIST_ARGS = ['-axo', 'pid=,command=', '-ww'];
 const PROCESS_LIST_COMMAND = 'ps';
 const TERMINATE_TIMEOUT_MILLIS = 5_000;
