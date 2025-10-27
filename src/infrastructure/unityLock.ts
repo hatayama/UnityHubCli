@@ -1,13 +1,24 @@
+import { execFile } from 'node:child_process';
 import { constants, createReadStream, createWriteStream } from 'node:fs';
 import { access, rm } from 'node:fs/promises';
 import { join } from 'node:path';
 import readline from 'node:readline';
+import { promisify } from 'node:util';
 
-import type { IUnityProcessLockChecker, IUnityProjectLockReader } from '../application/ports.js';
+import type {
+  IUnityProcessLockChecker,
+  IUnityProcessReader,
+  IUnityProjectLockReader,
+} from '../application/ports.js';
 
 type PromptInterface = { rl: readline.Interface; close: () => void };
 
 const RAW_PROMPT_MESSAGE = "Delete UnityLockfile and continue? Type 'y' to continue; anything else aborts: ";
+const execFileAsync = promisify(execFile);
+
+const buildBringToFrontScript = (pid: number): string => {
+  return `tell application "System Events" to set frontmost of (first process whose unix id is ${pid}) to true`;
+};
 
 const isRawModeSupported = (): boolean => {
   const stdin = process.stdin as NodeJS.ReadStream & { setRawMode?: (mode: boolean) => void };
@@ -142,7 +153,18 @@ const pathExists = async (target: string): Promise<boolean> => {
 };
 
 export class UnityLockChecker implements IUnityProcessLockChecker {
+  constructor(private readonly unityProcessReader: IUnityProcessReader) {}
+
   async check(projectPath: string): Promise<'allow' | 'skip'> {
+    const activeProcess = await this.unityProcessReader.findByProjectPath(projectPath);
+    if (activeProcess) {
+      console.log(
+        `Unity process already running for project: ${activeProcess.projectPath} (PID: ${activeProcess.pid})`,
+      );
+      await this.bringUnityToFront(activeProcess.pid);
+      return 'skip';
+    }
+
     const lockfilePath = join(projectPath, 'Temp', 'UnityLockfile');
     const hasLockfile = await pathExists(lockfilePath);
     if (!hasLockfile) {
@@ -164,6 +186,20 @@ export class UnityLockChecker implements IUnityProcessLockChecker {
     await rm(lockfilePath, { force: true });
     console.log('Deleted UnityLockfile. Continuing launch.');
     return 'allow';
+  }
+
+  private async bringUnityToFront(pid: number): Promise<void> {
+    if (process.platform !== 'darwin') {
+      return;
+    }
+
+    try {
+      const script = buildBringToFrontScript(pid);
+      await execFileAsync('osascript', ['-e', script]);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      console.error(`Failed to bring Unity to front: ${message}`);
+    }
   }
 }
 

@@ -16,6 +16,7 @@ const bootstrap = async (): Promise<void> => {
   const unityHubReader = new UnityHubProjectsReader();
   const gitRepositoryInfoReader = new GitRepositoryInfoReader();
   const lockStatusReader = new UnityLockStatusReader();
+  const unityProcessReader = new MacUnityProcessReader();
   const listProjectsUseCase = new ListProjectsUseCase(
     unityHubReader,
     gitRepositoryInfoReader,
@@ -24,8 +25,7 @@ const bootstrap = async (): Promise<void> => {
   );
   const editorPathResolver = new MacEditorPathResolver();
   const processLauncher = new NodeProcessLauncher();
-  const lockChecker = new UnityLockChecker();
-  const unityProcessReader = new MacUnityProcessReader();
+  const lockChecker = new UnityLockChecker(unityProcessReader);
   const unityProcessTerminator = new MacUnityProcessTerminator();
   const unityTempDirectoryCleaner = new UnityTempDirectoryCleaner();
   const launchProjectUseCase = new LaunchProjectUseCase(
