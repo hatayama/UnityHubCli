@@ -108,11 +108,18 @@ export class TerminateProjectUseCase {
       };
     }
 
-    await this.unityTempDirectoryCleaner.clean(project.path);
+    let cleanupMessage: string | undefined = undefined;
+    try {
+      await this.unityTempDirectoryCleaner.clean(project.path);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      console.error('Failed to clean Unity Temp directory:', message);
+      cleanupMessage = `Unity terminated, but failed to clean Temp: ${message}`;
+    }
 
     return {
       terminated: true,
-      message: undefined,
+      message: cleanupMessage,
     };
   }
 }
