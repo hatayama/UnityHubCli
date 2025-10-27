@@ -599,7 +599,7 @@ export const App: React.FC<AppProps> = ({
           rows
         )}
       </Box>
-      <Box marginTop={1}>
+      <Box>
         <Text>{hint}</Text>
       </Box>
     </Box>
