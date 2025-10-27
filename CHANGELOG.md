@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.6.0](https://github.com/hatayama/UnityHubCli/compare/unity-hub-cli-v0.5.0...unity-hub-cli-v0.6.0) (2025-10-27)
+
+
+### Features
+
+* focus running Unity session per project ([#23](https://github.com/hatayama/UnityHubCli/issues/23)) ([9faa7db](https://github.com/hatayama/UnityHubCli/commit/9faa7db7347903c472f17828bffc0194b5f4e30d))
+
 ## [0.5.0](https://github.com/hatayama/UnityHubCli/compare/unity-hub-cli-v0.4.0...unity-hub-cli-v0.5.0) (2025-10-27)
 
 
