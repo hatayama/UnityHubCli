@@ -2,7 +2,7 @@ import clipboard from 'clipboardy';
 import { Box, Text, useApp, useInput, useStdout } from 'ink';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 
-import type { ProjectView } from '../application/usecases.js';
+import type { LaunchStatus, ProjectView } from '../application/usecases.js';
 import { LaunchCancelledError } from '../application/usecases.js';
 import type { GitBranch, GitRepositoryInfo, UnityProject } from '../domain/models.js';
 
@@ -110,12 +110,16 @@ const homeDirectory = process.env.HOME ?? '';
 const homePrefix = homeDirectory ? `${homeDirectory}/` : '';
 const minimumVisibleProjectCount: number = 4;
 const defaultHintMessage =
-  'Move with arrows or j/k · Launch with o · Quit Unity with q · Copy cd path with c';
+  'Move with arrows or j/k · Launch with o · Quit Unity with q · Refresh with r · Copy cd path with c';
 const PROJECT_COLOR = '#abd8e7';
 const BRANCH_COLOR = '#e3839c';
 const PATH_COLOR = '#719bd8';
 const LOCK_COLOR = 'yellow';
-const LOCK_LABEL = '[running]';
+const STATUS_LABELS: Record<LaunchStatus, string> = {
+  idle: '',
+  running: '[running]',
+  crashed: '[crash]',
+};
 
 const shortenHomePath = (targetPath: string): string => {
   if (!homeDirectory) {
@@ -139,6 +143,7 @@ type AppProps = {
   readonly projects: readonly ProjectView[];
   readonly onLaunch: (project: UnityProject) => Promise<void>;
   readonly onTerminate: (project: UnityProject) => Promise<TerminateResult>;
+  readonly onRefresh?: () => Promise<ProjectView[]>;
   readonly useGitRootName?: boolean;
   readonly showBranch?: boolean;
   readonly showPath?: boolean;
@@ -148,22 +153,26 @@ export const App: React.FC<AppProps> = ({
   projects,
   onLaunch,
   onTerminate,
+  onRefresh,
   useGitRootName = true,
   showBranch = true,
   showPath = true,
 }) => {
   const { exit } = useApp();
   const { stdout } = useStdout();
+  const [projectViews, setProjectViews] = useState<readonly ProjectView[]>(projects);
   const [visibleCount, setVisibleCount] = useState<number>(minimumVisibleProjectCount);
   const [index, setIndex] = useState(0);
   const [hint, setHint] = useState<string>(defaultHintMessage);
   const [windowStart, setWindowStart] = useState(0);
   const [releasedProjects, setReleasedProjects] = useState<ReadonlySet<string>>(new Set());
   const [launchedProjects, setLaunchedProjects] = useState<ReadonlySet<string>>(new Set());
+  const [isRefreshing, setIsRefreshing] = useState(false);
   const linesPerProject = (showBranch ? 1 : 0) + (showPath ? 1 : 0) + 2;
 
   const sortedProjects = useMemo(() => {
     const fallbackTime = 0;
+
     const toSortKey = (view: ProjectView): string => {
       if (useGitRootName) {
         const rootName = extractRootFolder(view.repository);
@@ -176,7 +185,7 @@ export const App: React.FC<AppProps> = ({
 
     const toTieBreaker = (view: ProjectView): string => view.project.path.toLocaleLowerCase();
 
-    return [...projects].sort((a, b) => {
+    return [...projectViews].sort((a, b) => {
       if (a.project.favorite !== b.project.favorite) {
         return a.project.favorite ? -1 : 1;
       }
@@ -194,7 +203,7 @@ export const App: React.FC<AppProps> = ({
       }
       return keyA.localeCompare(keyB);
     });
-  }, [projects, useGitRootName]);
+  }, [projectViews, useGitRootName]);
 
   useEffect(() => {
     const handleSigint = () => {
@@ -443,9 +452,70 @@ export const App: React.FC<AppProps> = ({
   }, [index, onTerminate, sortedProjects]);
 
   useEffect(() => {
+    setProjectViews(projects);
     setReleasedProjects(new Set());
     setLaunchedProjects(new Set());
   }, [projects]);
+
+  const refreshProjects = useCallback(async () => {
+    if (!onRefresh) {
+      setHint('Refresh not available');
+      setTimeout(() => {
+        setHint(defaultHintMessage);
+      }, 2000);
+      return;
+    }
+
+    if (isRefreshing) {
+      setHint('Already refreshing');
+      setTimeout(() => {
+        setHint(defaultHintMessage);
+      }, 2000);
+      return;
+    }
+
+    setIsRefreshing(true);
+    setHint('Refreshing projects...');
+
+    try {
+      const updatedProjects = await onRefresh();
+      setProjectViews(updatedProjects);
+      setReleasedProjects(new Set());
+      setLaunchedProjects(new Set());
+      setIndex((previousIndex) => {
+        if (updatedProjects.length === 0) {
+          return 0;
+        }
+
+        const previousProject = sortedProjects[previousIndex]?.project;
+        if (!previousProject) {
+          return Math.min(previousIndex, updatedProjects.length - 1);
+        }
+
+        const nextIndex = updatedProjects.findIndex(
+          (candidate) => candidate.project.id === previousProject.id,
+        );
+        if (nextIndex === -1) {
+          return Math.min(previousIndex, updatedProjects.length - 1);
+        }
+
+        return nextIndex;
+      });
+      setWindowStart(0);
+      setHint('Project list refreshed');
+      setTimeout(() => {
+        setHint(defaultHintMessage);
+      }, 2000);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      setHint(`Failed to refresh: ${message}`);
+      setTimeout(() => {
+        setHint(defaultHintMessage);
+      }, 3000);
+    } finally {
+      setIsRefreshing(false);
+    }
+  }, [isRefreshing, onRefresh, sortedProjects]);
 
   useInput((input, key) => {
     if (input === 'j' || key.downArrow) {
@@ -463,6 +533,11 @@ export const App: React.FC<AppProps> = ({
 
     if (input === 'o') {
       void launchSelected();
+      return;
+    }
+
+    if (input === 'r') {
+      void refreshProjects();
       return;
     }
 
@@ -490,7 +565,7 @@ export const App: React.FC<AppProps> = ({
   }, [limit, sortedProjects, windowStart]);
 
   const scrollbarChars = useMemo(() => {
-    const totalProjects = projects.length;
+    const totalProjects = projectViews.length;
     const totalLines = totalProjects * linesPerProject;
     const windowProjects = visibleProjects.length;
     const visibleLines = windowProjects * linesPerProject;
@@ -519,10 +594,10 @@ export const App: React.FC<AppProps> = ({
       }
       return '|';
     });
-  }, [linesPerProject, projects.length, startIndex, visibleProjects]);
+  }, [linesPerProject, projectViews.length, startIndex, visibleProjects]);
 
   const rows = useMemo(() => {
-    return visibleProjects.map(({ project, repository, isLocked }, offset) => {
+    return visibleProjects.map(({ project, repository, launchStatus }, offset) => {
       const rowIndex = startIndex + offset;
       const isSelected = rowIndex === index;
       const arrow: string = isSelected ? '>' : ' ';
@@ -531,8 +606,20 @@ export const App: React.FC<AppProps> = ({
       const updatedText: string | undefined = formatUpdatedText(project.lastModified);
       const pathLine: string = shortenHomePath(project.path);
       const branchLine: string = formatBranch(repository?.branch);
-      const activeLock =
-        (isLocked && !releasedProjects.has(project.id)) || launchedProjects.has(project.id);
+      const hasReleasedLock = releasedProjects.has(project.id);
+      const isLocallyLaunched = launchedProjects.has(project.id);
+      const displayStatus: LaunchStatus = (() => {
+        if (isLocallyLaunched) {
+          return 'running';
+        }
+
+        if (hasReleasedLock) {
+          return 'idle';
+        }
+
+        return launchStatus;
+      })();
+
       const baseScrollbarIndex = offset * linesPerProject;
       const titleScrollbar = scrollbarChars[baseScrollbarIndex] ?? ' ';
       const branchScrollbar = showBranch ? scrollbarChars[baseScrollbarIndex + 1] ?? ' ' : ' ';
@@ -540,6 +627,9 @@ export const App: React.FC<AppProps> = ({
         ? scrollbarChars[baseScrollbarIndex + 1 + (showBranch ? 1 : 0)] ?? ' '
         : ' ';
       const spacerScrollbar = scrollbarChars[baseScrollbarIndex + linesPerProject - 1] ?? ' ';
+
+      const statusLabel: string = STATUS_LABELS[displayStatus];
+      const statusColor: string | undefined = displayStatus === 'running' ? LOCK_COLOR : displayStatus === 'crashed' ? 'red' : undefined;
 
       return (
         <Box key={project.id} flexDirection="row">
@@ -552,7 +642,9 @@ export const App: React.FC<AppProps> = ({
               {updatedText ? (
                 <Text color={isSelected ? 'green' : undefined}>{`  ${updatedText}`}</Text>
               ) : null}
-              {activeLock ? <Text color={LOCK_COLOR}>{`  ${LOCK_LABEL}`}</Text> : null}
+              {statusLabel && statusColor ? (
+                <Text color={statusColor}>{`  ${statusLabel}`}</Text>
+              ) : null}
             </Text>
             {showBranch ? (
               <Text color={isSelected ? 'green' : BRANCH_COLOR}>

@@ -17,17 +17,18 @@ const bootstrap = async (): Promise<void> => {
   const gitRepositoryInfoReader = new GitRepositoryInfoReader();
   const lockStatusReader = new UnityLockStatusReader();
   const unityProcessReader = new MacUnityProcessReader();
+  const unityTempDirectoryCleaner = new UnityTempDirectoryCleaner();
   const listProjectsUseCase = new ListProjectsUseCase(
     unityHubReader,
     gitRepositoryInfoReader,
     unityHubReader,
     lockStatusReader,
+    unityProcessReader,
   );
   const editorPathResolver = new MacEditorPathResolver();
   const processLauncher = new NodeProcessLauncher();
-  const lockChecker = new UnityLockChecker(unityProcessReader);
+  const lockChecker = new UnityLockChecker(unityProcessReader, unityTempDirectoryCleaner);
   const unityProcessTerminator = new MacUnityProcessTerminator();
-  const unityTempDirectoryCleaner = new UnityTempDirectoryCleaner();
   const launchProjectUseCase = new LaunchProjectUseCase(
     editorPathResolver,
     processLauncher,
@@ -38,7 +39,6 @@ const bootstrap = async (): Promise<void> => {
   const terminateProjectUseCase = new TerminateProjectUseCase(
     unityProcessReader,
     unityProcessTerminator,
-    unityTempDirectoryCleaner,
   );
   const useGitRootName = !process.argv.includes('--no-git-root-name');
   const showBranch = !process.argv.includes('--hide-branch');
@@ -51,6 +51,7 @@ const bootstrap = async (): Promise<void> => {
         projects={projects}
         onLaunch={(project) => launchProjectUseCase.execute(project)}
         onTerminate={(project) => terminateProjectUseCase.execute(project)}
+        onRefresh={() => listProjectsUseCase.execute()}
         useGitRootName={useGitRootName}
         showBranch={showBranch}
         showPath={showPath}

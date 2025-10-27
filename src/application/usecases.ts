@@ -10,13 +10,15 @@ import type {
   IUnityProcessTerminator,
   IUnityProjectLockReader,
   IUnityProjectOptionsReader,
-  IUnityTempDirectoryCleaner,
 } from './ports.js';
+
+export type LaunchStatus = 'idle' | 'running' | 'crashed';
 
 export type ProjectView = {
   readonly project: UnityProject;
   readonly repository?: GitRepositoryInfo;
   readonly isLocked: boolean;
+  readonly launchStatus: LaunchStatus;
 };
 
 export class ListProjectsUseCase {
@@ -25,27 +27,43 @@ export class ListProjectsUseCase {
     private readonly gitRepositoryInfoReader: IGitRepositoryInfoReader,
     private readonly unityProjectOptionsReader: IUnityProjectOptionsReader,
     private readonly lockReader: IUnityProjectLockReader,
+    private readonly unityProcessReader: IUnityProcessReader,
   ) {}
 
   async execute(): Promise<ProjectView[]> {
     const projects = await this.unityHubProjectsReader.listProjects();
-    const [repositoryInfoResults, lockResults] = await Promise.all([
+    const [repositoryInfoResults, lockResults, processResults] = await Promise.all([
       Promise.allSettled(
         projects.map((project) => this.gitRepositoryInfoReader.readRepositoryInfo(project.path)),
       ),
       Promise.allSettled(projects.map((project) => this.lockReader.isLocked(project.path))),
+      Promise.allSettled(projects.map((project) => this.unityProcessReader.findByProjectPath(project.path))),
     ]);
 
     return projects.map((project, index) => {
       const repositoryResult = repositoryInfoResults[index];
       const lockResult = lockResults[index];
+      const processResult = processResults[index];
 
       const repository: GitRepositoryInfo | undefined =
         repositoryResult.status === 'fulfilled' ? repositoryResult.value ?? undefined : undefined;
       const isLocked: boolean = lockResult.status === 'fulfilled' ? Boolean(lockResult.value) : false;
+      const hasRunningProcess: boolean =
+        processResult.status === 'fulfilled' ? Boolean(processResult.value) : false;
+      const launchStatus: LaunchStatus = this.determineLaunchStatus(hasRunningProcess, isLocked);
 
-      return { project, repository, isLocked };
+      return { project, repository, isLocked, launchStatus };
     });
+  }
+
+  private determineLaunchStatus(hasRunningProcess: boolean, isLocked: boolean): LaunchStatus {
+    if (hasRunningProcess) {
+      return 'running';
+    }
+    if (isLocked) {
+      return 'crashed';
+    }
+    return 'idle';
   }
 }
 
@@ -86,7 +104,6 @@ export class TerminateProjectUseCase {
   constructor(
     private readonly unityProcessReader: IUnityProcessReader,
     private readonly unityProcessTerminator: IUnityProcessTerminator,
-    private readonly unityTempDirectoryCleaner: IUnityTempDirectoryCleaner,
   ) {}
 
   async execute(
@@ -108,18 +125,8 @@ export class TerminateProjectUseCase {
       };
     }
 
-    let cleanupMessage: string | undefined = undefined;
-    try {
-      await this.unityTempDirectoryCleaner.clean(project.path);
-    } catch (error) {
-      const message = error instanceof Error ? error.message : String(error);
-      console.error('Failed to clean Unity Temp directory:', message);
-      cleanupMessage = `Unity terminated, but failed to clean Temp: ${message}`;
-    }
-
     return {
       terminated: true,
-      message: cleanupMessage,
     };
   }
 }
