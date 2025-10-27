@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.6.1](https://github.com/hatayama/UnityHubCli/compare/unity-hub-cli-v0.6.0...unity-hub-cli-v0.6.1) (2025-10-27)
+
+
+### Bug Fixes
+
+* remove extra hint margin ([#25](https://github.com/hatayama/UnityHubCli/issues/25)) ([3929385](https://github.com/hatayama/UnityHubCli/commit/39293857cef9fa1269ce47a661cf5a6280dca929))
+
 ## [0.6.0](https://github.com/hatayama/UnityHubCli/compare/unity-hub-cli-v0.5.0...unity-hub-cli-v0.6.0) (2025-10-27)
 
 
