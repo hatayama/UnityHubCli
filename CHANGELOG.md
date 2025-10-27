@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.5.0](https://github.com/hatayama/UnityHubCli/compare/unity-hub-cli-v0.4.0...unity-hub-cli-v0.5.0) (2025-10-27)
+
+
+### Features
+
+* add Unity termination support and running label ([#21](https://github.com/hatayama/UnityHubCli/issues/21)) ([2d68e46](https://github.com/hatayama/UnityHubCli/commit/2d68e46bc0175cdea0f354b938aaca3c08201b97))
+
 ## [0.4.0](https://github.com/hatayama/UnityHubCli/compare/unity-hub-cli-v0.3.0...unity-hub-cli-v0.4.0) (2025-10-27)
 
 
