@@ -217,8 +217,7 @@ export const App: React.FC<AppProps> = ({
 
       const borderRows = 2;
       const hintRows = 1;
-      const hintMarginRows = 1;
-      const reservedRows = borderRows + hintRows + hintMarginRows;
+      const reservedRows = borderRows + hintRows;
       const availableRows = stdout.rows - reservedRows;
       const rowsPerProject = Math.max(linesPerProject, 1);
       const calculatedCount = Math.max(
