@@ -3,7 +3,7 @@ import { access, rm } from 'node:fs/promises';
 import { join } from 'node:path';
 import readline from 'node:readline';
 
-import type { IUnityProcessLockChecker } from '../application/ports.js';
+import type { IUnityProcessLockChecker, IUnityProjectLockReader } from '../application/ports.js';
 
 type PromptInterface = { rl: readline.Interface; close: () => void };
 
@@ -164,5 +164,12 @@ export class UnityLockChecker implements IUnityProcessLockChecker {
     await rm(lockfilePath, { force: true });
     console.log('Deleted UnityLockfile. Continuing launch.');
     return 'allow';
+  }
+}
+
+export class UnityLockStatusReader implements IUnityProjectLockReader {
+  async isLocked(projectPath: string): Promise<boolean> {
+    const lockfilePath = join(projectPath, 'Temp', 'UnityLockfile');
+    return await pathExists(lockfilePath);
   }
 }

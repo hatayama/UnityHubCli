@@ -112,6 +112,8 @@ const defaultHintMessage =
 const PROJECT_COLOR = '#abd8e7';
 const BRANCH_COLOR = '#e3839c';
 const PATH_COLOR = '#719bd8';
+const LOCK_COLOR = 'yellow';
+const LOCK_LABEL = '[running]';
 
 const shortenHomePath = (targetPath: string): string => {
   if (!homeDirectory) {
@@ -445,7 +447,7 @@ export const App: React.FC<AppProps> = ({
   }, [linesPerProject, projects.length, startIndex, visibleProjects]);
 
   const rows = useMemo(() => {
-    return visibleProjects.map(({ project, repository }, offset) => {
+    return visibleProjects.map(({ project, repository, isLocked }, offset) => {
       const rowIndex = startIndex + offset;
       const isSelected = rowIndex === index;
       const arrow: string = isSelected ? '>' : ' ';
@@ -473,6 +475,7 @@ export const App: React.FC<AppProps> = ({
               {updatedText ? (
                 <Text color={isSelected ? 'green' : undefined}>{`  ${updatedText}`}</Text>
               ) : null}
+              {isLocked ? <Text color={LOCK_COLOR}>{`  ${LOCK_LABEL}`}</Text> : null}
             </Text>
             {showBranch ? (
               <Text color={isSelected ? 'green' : BRANCH_COLOR}>

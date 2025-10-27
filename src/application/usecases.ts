@@ -6,12 +6,14 @@ import type {
   IProcessLauncher,
   IUnityHubProjectsReader,
   IUnityProcessLockChecker,
+  IUnityProjectLockReader,
   IUnityProjectOptionsReader,
 } from './ports.js';
 
 export type ProjectView = {
   readonly project: UnityProject;
   readonly repository?: GitRepositoryInfo;
+  readonly isLocked: boolean;
 };
 
 export class ListProjectsUseCase {
@@ -19,20 +21,27 @@ export class ListProjectsUseCase {
     private readonly unityHubProjectsReader: IUnityHubProjectsReader,
     private readonly gitRepositoryInfoReader: IGitRepositoryInfoReader,
     private readonly unityProjectOptionsReader: IUnityProjectOptionsReader,
+    private readonly lockReader: IUnityProjectLockReader,
   ) {}
 
   async execute(): Promise<ProjectView[]> {
     const projects = await this.unityHubProjectsReader.listProjects();
-    const repositoryInfoResults = await Promise.allSettled(
-      projects.map((project) => this.gitRepositoryInfoReader.readRepositoryInfo(project.path)),
-    );
+    const [repositoryInfoResults, lockResults] = await Promise.all([
+      Promise.allSettled(
+        projects.map((project) => this.gitRepositoryInfoReader.readRepositoryInfo(project.path)),
+      ),
+      Promise.allSettled(projects.map((project) => this.lockReader.isLocked(project.path))),
+    ]);
 
     return projects.map((project, index) => {
       const repositoryResult = repositoryInfoResults[index];
-      if (repositoryResult.status === 'fulfilled') {
-        return { project, repository: repositoryResult.value ?? undefined };
-      }
-      return { project };
+      const lockResult = lockResults[index];
+
+      const repository: GitRepositoryInfo | undefined =
+        repositoryResult.status === 'fulfilled' ? repositoryResult.value ?? undefined : undefined;
+      const isLocked: boolean = lockResult.status === 'fulfilled' ? Boolean(lockResult.value) : false;
+
+      return { project, repository, isLocked };
     });
   }
 }

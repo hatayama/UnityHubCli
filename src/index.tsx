@@ -7,16 +7,18 @@ import { MacEditorPathResolver } from './infrastructure/editor.js';
 import { GitRepositoryInfoReader } from './infrastructure/git.js';
 import { NodeProcessLauncher } from './infrastructure/process.js';
 import { UnityHubProjectsReader } from './infrastructure/unityhub.js';
-import { UnityLockChecker } from './infrastructure/unityLock.js';
+import { UnityLockChecker, UnityLockStatusReader } from './infrastructure/unityLock.js';
 import { App } from './presentation/App.js';
 
 const bootstrap = async (): Promise<void> => {
   const unityHubReader = new UnityHubProjectsReader();
   const gitRepositoryInfoReader = new GitRepositoryInfoReader();
+  const lockStatusReader = new UnityLockStatusReader();
   const listProjectsUseCase = new ListProjectsUseCase(
     unityHubReader,
     gitRepositoryInfoReader,
     unityHubReader,
+    lockStatusReader,
   );
   const editorPathResolver = new MacEditorPathResolver();
   const processLauncher = new NodeProcessLauncher();
