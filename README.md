@@ -4,6 +4,8 @@
 
 A CLI tool that displays the same content as Unity Hub in an Ink-based TUI, allows navigation with arrow keys/`j`/`k`, and launches Unity Editor by pressing `o`.
 
+<img width="1678" height="1460" alt="スクリーンショット 2025-10-27 23 44 40" src="https://github.com/user-attachments/assets/db3cc995-820e-490b-a43b-393893197ab4" />
+
 ## Requirements
 
 - macOS
