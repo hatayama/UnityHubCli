@@ -6,8 +6,11 @@ import type {
   IProcessLauncher,
   IUnityHubProjectsReader,
   IUnityProcessLockChecker,
+  IUnityProcessReader,
+  IUnityProcessTerminator,
   IUnityProjectLockReader,
   IUnityProjectOptionsReader,
+  IUnityTempDirectoryCleaner,
 } from './ports.js';
 
 export type ProjectView = {
@@ -76,5 +79,40 @@ export class LaunchProjectUseCase {
       detached: true,
     });
     await this.unityHubProjectsReader.updateLastModified(project.path, new Date());
+  }
+}
+
+export class TerminateProjectUseCase {
+  constructor(
+    private readonly unityProcessReader: IUnityProcessReader,
+    private readonly unityProcessTerminator: IUnityProcessTerminator,
+    private readonly unityTempDirectoryCleaner: IUnityTempDirectoryCleaner,
+  ) {}
+
+  async execute(
+    project: UnityProject,
+  ): Promise<{ readonly terminated: boolean; readonly message?: string }> {
+    const unityProcess = await this.unityProcessReader.findByProjectPath(project.path);
+    if (!unityProcess) {
+      return {
+        terminated: false,
+        message: 'このプロジェクトで動いているUnityは見つかりませんでした',
+      };
+    }
+
+    const terminated = await this.unityProcessTerminator.terminate(unityProcess);
+    if (!terminated) {
+      return {
+        terminated: false,
+        message: 'Unityプロセスの終了に失敗しました',
+      };
+    }
+
+    await this.unityTempDirectoryCleaner.clean(project.path);
+
+    return {
+      terminated: true,
+      message: undefined,
+    };
   }
 }

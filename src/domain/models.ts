@@ -19,3 +19,8 @@ export type UnityProject = {
   readonly lastModified?: Date;
   readonly favorite: boolean;
 };
+
+export type UnityProcess = {
+  readonly pid: number;
+  readonly projectPath: string;
+};
