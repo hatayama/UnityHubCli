@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.4.0](https://github.com/hatayama/UnityHubCli/compare/unity-hub-cli-v0.3.0...unity-hub-cli-v0.4.0) (2025-10-27)
+
+
+### Features
+
+* update version ([256cbc6](https://github.com/hatayama/UnityHubCli/commit/256cbc669bd81e864ac2901cb92681e6cad0fe21))
+
 ## [0.3.0](https://github.com/hatayama/UnityHubCli/compare/unity-hub-cli-v0.2.0...unity-hub-cli-v0.3.0) (2025-10-24)
 
 
