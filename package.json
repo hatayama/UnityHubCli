@@ -1,6 +1,6 @@
 {
   "name": "unity-hub-cli",
-  "version": "0.6.1",
+  "version": "0.7.0",
   "description": "A CLI tool that reads Unity Hub's projects and launches Unity Editor with an interactive TUI",
   "main": "dist/index.js",
   "scripts": {
