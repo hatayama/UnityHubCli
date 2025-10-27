@@ -13,6 +13,10 @@ export interface IUnityProjectOptionsReader {
   readCliArgs(projectPath: string): Promise<readonly string[]>;
 }
 
+export interface IUnityProjectLockReader {
+  isLocked(projectPath: string): Promise<boolean>;
+}
+
 export interface IEditorPathResolver {
   resolve(version: EditorVersion): Promise<string>;
 }
