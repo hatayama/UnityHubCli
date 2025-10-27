@@ -1,6 +1,6 @@
 import { execFile } from 'node:child_process';
-import { promisify } from 'node:util';
 import { resolve } from 'node:path';
+import { promisify } from 'node:util';
 
 import type {
   IUnityProcessReader,
@@ -99,7 +99,7 @@ export class MacUnityProcessReader implements IUnityProcessReader {
       const result = await execFileAsync(PROCESS_LIST_COMMAND, PROCESS_LIST_ARGS);
       stdout = result.stdout;
     } catch (error) {
-      throw new Error(`Unityプロセス一覧の取得に失敗しました: ${error instanceof Error ? error.message : String(error)}`);
+      throw new Error(`Failed to retrieve Unity process list: ${error instanceof Error ? error.message : String(error)}`);
     }
 
     const lines = stdout.split('\n').map((line) => line.trim()).filter((line) => line.length > 0);
@@ -144,7 +144,7 @@ export class MacUnityProcessTerminator implements IUnityProcessTerminator {
         return false;
       }
       throw new Error(
-        `Unityプロセスの終了に失敗しました（PID: ${unityProcess.pid}）: ${error instanceof Error ? error.message : String(error)}`,
+        `Failed to terminate the Unity process (PID: ${unityProcess.pid}): ${error instanceof Error ? error.message : String(error)}`,
       );
     }
 
@@ -164,7 +164,7 @@ export class MacUnityProcessTerminator implements IUnityProcessTerminator {
         return true;
       }
       throw new Error(
-        `Unityプロセスの強制終了に失敗しました（PID: ${unityProcess.pid}）: ${error instanceof Error ? error.message : String(error)}`,
+        `Failed to forcefully terminate the Unity process (PID: ${unityProcess.pid}): ${error instanceof Error ? error.message : String(error)}`,
       );
     }
 

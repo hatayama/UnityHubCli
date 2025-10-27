@@ -594,7 +594,7 @@ export const App: React.FC<AppProps> = ({
     <Box flexDirection="column">
       <Box flexDirection="column" borderStyle="round" borderColor="green">
         {rows.length === 0 ? (
-          <Text>Unity Hubのプロジェクトが見つかりませんでした្ួκι졌</Text>
+          <Text>No Unity Hub projects were found.</Text>
         ) : (
           rows
         )}

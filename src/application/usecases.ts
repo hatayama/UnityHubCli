@@ -96,7 +96,7 @@ export class TerminateProjectUseCase {
     if (!unityProcess) {
       return {
         terminated: false,
-        message: 'このプロジェクトで動いているUnityは見つかりませんでした',
+        message: 'No Unity process is running for this project.',
       };
     }
 
@@ -104,7 +104,7 @@ export class TerminateProjectUseCase {
     if (!terminated) {
       return {
         terminated: false,
-        message: 'Unityプロセスの終了に失敗しました',
+        message: 'Failed to terminate the Unity process.',
       };
     }
 
