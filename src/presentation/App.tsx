@@ -6,6 +6,8 @@ import type { ProjectView } from '../application/usecases.js';
 import { LaunchCancelledError } from '../application/usecases.js';
 import type { GitBranch, GitRepositoryInfo, UnityProject } from '../domain/models.js';
 
+type TerminateResult = { readonly terminated: boolean; readonly message?: string };
+
 const extractRootFolder = (repository?: GitRepositoryInfo): string | undefined => {
   if (!repository?.root) {
     return undefined;
@@ -108,7 +110,7 @@ const homeDirectory = process.env.HOME ?? '';
 const homePrefix = homeDirectory ? `${homeDirectory}/` : '';
 const minimumVisibleProjectCount: number = 4;
 const defaultHintMessage =
-  'Move with arrows or j/k · Launch with o · Copy cd path with c · Exit with Ctrl+C';
+  'Move with arrows or j/k · Launch with o · Quit Unity with q · Copy cd path with c';
 const PROJECT_COLOR = '#abd8e7';
 const BRANCH_COLOR = '#e3839c';
 const PATH_COLOR = '#719bd8';
@@ -136,6 +138,7 @@ const buildCdCommand = (targetPath: string): string => {
 type AppProps = {
   readonly projects: readonly ProjectView[];
   readonly onLaunch: (project: UnityProject) => Promise<void>;
+  readonly onTerminate: (project: UnityProject) => Promise<TerminateResult>;
   readonly useGitRootName?: boolean;
   readonly showBranch?: boolean;
   readonly showPath?: boolean;
@@ -144,6 +147,7 @@ type AppProps = {
 export const App: React.FC<AppProps> = ({
   projects,
   onLaunch,
+  onTerminate,
   useGitRootName = true,
   showBranch = true,
   showPath = true,
@@ -154,6 +158,8 @@ export const App: React.FC<AppProps> = ({
   const [index, setIndex] = useState(0);
   const [hint, setHint] = useState<string>(defaultHintMessage);
   const [windowStart, setWindowStart] = useState(0);
+  const [releasedProjects, setReleasedProjects] = useState<ReadonlySet<string>>(new Set());
+  const [launchedProjects, setLaunchedProjects] = useState<ReadonlySet<string>>(new Set());
   const linesPerProject = (showBranch ? 1 : 0) + (showPath ? 1 : 0) + 2;
 
   const sortedProjects = useMemo(() => {
@@ -357,6 +363,19 @@ export const App: React.FC<AppProps> = ({
 
     try {
       await onLaunch(project);
+      setLaunchedProjects((previous) => {
+        const next = new Set(previous);
+        next.add(project.id);
+        return next;
+      });
+      setReleasedProjects((previous) => {
+        if (!previous.has(project.id)) {
+          return previous;
+        }
+        const next = new Set(previous);
+        next.delete(project.id);
+        return next;
+      });
       setHint(`Launched: ${project.title}`);
       setTimeout(() => {
         setHint(defaultHintMessage);
@@ -378,6 +397,57 @@ export const App: React.FC<AppProps> = ({
     }
   }, [index, onLaunch, sortedProjects]);
 
+  const terminateSelected = useCallback(async () => {
+    const projectView = sortedProjects[index];
+    if (!projectView) {
+      setHint('No project to terminate');
+      setTimeout(() => {
+        setHint(defaultHintMessage);
+      }, 2000);
+      return;
+    }
+
+    try {
+      const result = await onTerminate(projectView.project);
+      if (!result.terminated) {
+        setHint(result.message ?? 'No running Unity for this project');
+        setTimeout(() => {
+          setHint(defaultHintMessage);
+        }, 3000);
+        return;
+      }
+
+      setHint(`Stopped Unity: ${projectView.project.title}`);
+      setTimeout(() => {
+        setHint(defaultHintMessage);
+      }, 3000);
+      setLaunchedProjects((previous) => {
+        if (!previous.has(projectView.project.id)) {
+          return previous;
+        }
+        const next = new Set(previous);
+        next.delete(projectView.project.id);
+        return next;
+      });
+      setReleasedProjects((previous) => {
+        const next = new Set(previous);
+        next.add(projectView.project.id);
+        return next;
+      });
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      setHint(`Failed to stop: ${message}`);
+      setTimeout(() => {
+        setHint(defaultHintMessage);
+      }, 3000);
+    }
+  }, [index, onTerminate, sortedProjects]);
+
+  useEffect(() => {
+    setReleasedProjects(new Set());
+    setLaunchedProjects(new Set());
+  }, [projects]);
+
   useInput((input, key) => {
     if (input === 'j' || key.downArrow) {
       move(1);
@@ -387,8 +457,14 @@ export const App: React.FC<AppProps> = ({
       move(-1);
     }
 
+    if (input === 'q') {
+      void terminateSelected();
+      return;
+    }
+
     if (input === 'o') {
       void launchSelected();
+      return;
     }
 
     if (input === 'c') {
@@ -456,6 +532,8 @@ export const App: React.FC<AppProps> = ({
       const updatedText: string | undefined = formatUpdatedText(project.lastModified);
       const pathLine: string = shortenHomePath(project.path);
       const branchLine: string = formatBranch(repository?.branch);
+      const activeLock =
+        (isLocked && !releasedProjects.has(project.id)) || launchedProjects.has(project.id);
       const baseScrollbarIndex = offset * linesPerProject;
       const titleScrollbar = scrollbarChars[baseScrollbarIndex] ?? ' ';
       const branchScrollbar = showBranch ? scrollbarChars[baseScrollbarIndex + 1] ?? ' ' : ' ';
@@ -475,7 +553,7 @@ export const App: React.FC<AppProps> = ({
               {updatedText ? (
                 <Text color={isSelected ? 'green' : undefined}>{`  ${updatedText}`}</Text>
               ) : null}
-              {isLocked ? <Text color={LOCK_COLOR}>{`  ${LOCK_LABEL}`}</Text> : null}
+              {activeLock ? <Text color={LOCK_COLOR}>{`  ${LOCK_LABEL}`}</Text> : null}
             </Text>
             {showBranch ? (
               <Text color={isSelected ? 'green' : BRANCH_COLOR}>
@@ -500,13 +578,23 @@ export const App: React.FC<AppProps> = ({
         </Box>
       );
     });
-  }, [index, scrollbarChars, showBranch, showPath, startIndex, useGitRootName, visibleProjects]);
+  }, [
+    index,
+    launchedProjects,
+    releasedProjects,
+    scrollbarChars,
+    showBranch,
+    showPath,
+    startIndex,
+    useGitRootName,
+    visibleProjects,
+  ]);
 
   return (
     <Box flexDirection="column">
       <Box flexDirection="column" borderStyle="round" borderColor="green">
         {rows.length === 0 ? (
-          <Text>Unity Hubのプロジェクトが見つかりませんでした</Text>
+          <Text>No Unity Hub projects were found.</Text>
         ) : (
           rows
         )}

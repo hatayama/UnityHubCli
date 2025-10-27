@@ -15,7 +15,7 @@ export class MacEditorPathResolver implements IEditorPathResolver {
     try {
       await access(editorPath, constants.X_OK);
     } catch {
-      throw new Error(`対応するUnity Editorが見つかりません（${version.value}）`);
+      throw new Error(`Unity Editor not found for version ${version.value}.`);
     }
 
     return editorPath;

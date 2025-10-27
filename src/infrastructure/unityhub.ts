@@ -78,7 +78,7 @@ export class UnityHubProjectsReader implements IUnityHubProjectsReader, IUnityPr
       content = await readFile(HUB_PROJECTS_PATH, 'utf8');
     } catch {
       throw new Error(
-        `Unity Hubのプロジェクト一覧が見つかりません（${HUB_PROJECTS_PATH}）`,
+        `Unity Hub project list not found (${HUB_PROJECTS_PATH}).`,
       );
     }
 
@@ -86,11 +86,11 @@ export class UnityHubProjectsReader implements IUnityHubProjectsReader, IUnityPr
     try {
       json = JSON.parse(content) as UnityHubProjectsJson;
     } catch {
-      throw new Error('Unity Hubのプロジェクト一覧を読み取れません（権限/形式エラー）');
+      throw new Error('Unable to read the Unity Hub project list (permissions/format error).');
     }
 
     if (json.schema_version && json.schema_version !== schemaVersion) {
-      throw new Error(`未対応のschema_versionです（${json.schema_version}）`);
+      throw new Error(`Unsupported schema_version (${json.schema_version}).`);
     }
 
     const entries = Object.values(json.data ?? {});
@@ -108,7 +108,7 @@ export class UnityHubProjectsReader implements IUnityHubProjectsReader, IUnityPr
       content = await readFile(HUB_PROJECTS_PATH, 'utf8');
     } catch {
       throw new Error(
-        `Unity Hubのプロジェクト一覧が見つかりません（${HUB_PROJECTS_PATH}）`,
+        `Unity Hub project list not found (${HUB_PROJECTS_PATH}).`,
       );
     }
 
@@ -116,7 +116,7 @@ export class UnityHubProjectsReader implements IUnityHubProjectsReader, IUnityPr
     try {
       json = JSON.parse(content) as UnityHubProjectsJson;
     } catch {
-      throw new Error('Unity Hubのプロジェクト一覧を読み取れません（権限/形式エラー）');
+      throw new Error('Unable to read the Unity Hub project list (permissions/format error).');
     }
 
     if (!json.data) {

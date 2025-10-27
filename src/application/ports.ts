@@ -1,4 +1,4 @@
-import type { EditorVersion, GitRepositoryInfo, UnityProject } from '../domain/models.js';
+import type { EditorVersion, GitRepositoryInfo, UnityProcess, UnityProject } from '../domain/models.js';
 
 export interface IUnityHubProjectsReader {
   listProjects(): Promise<UnityProject[]>;
@@ -27,4 +27,16 @@ export interface IProcessLauncher {
 
 export interface IUnityProcessLockChecker {
   check(projectPath: string): Promise<'allow' | 'skip'>;
+}
+
+export interface IUnityProcessTerminator {
+  terminate(unityProcess: UnityProcess): Promise<boolean>;
+}
+
+export interface IUnityProcessReader {
+  findByProjectPath(projectPath: string): Promise<UnityProcess | undefined>;
+}
+
+export interface IUnityTempDirectoryCleaner {
+  clean(projectPath: string): Promise<void>;
 }

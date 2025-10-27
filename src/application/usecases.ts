@@ -6,8 +6,11 @@ import type {
   IProcessLauncher,
   IUnityHubProjectsReader,
   IUnityProcessLockChecker,
+  IUnityProcessReader,
+  IUnityProcessTerminator,
   IUnityProjectLockReader,
   IUnityProjectOptionsReader,
+  IUnityTempDirectoryCleaner,
 } from './ports.js';
 
 export type ProjectView = {
@@ -76,5 +79,47 @@ export class LaunchProjectUseCase {
       detached: true,
     });
     await this.unityHubProjectsReader.updateLastModified(project.path, new Date());
+  }
+}
+
+export class TerminateProjectUseCase {
+  constructor(
+    private readonly unityProcessReader: IUnityProcessReader,
+    private readonly unityProcessTerminator: IUnityProcessTerminator,
+    private readonly unityTempDirectoryCleaner: IUnityTempDirectoryCleaner,
+  ) {}
+
+  async execute(
+    project: UnityProject,
+  ): Promise<{ readonly terminated: boolean; readonly message?: string }> {
+    const unityProcess = await this.unityProcessReader.findByProjectPath(project.path);
+    if (!unityProcess) {
+      return {
+        terminated: false,
+        message: 'No Unity process is running for this project.',
+      };
+    }
+
+    const terminated = await this.unityProcessTerminator.terminate(unityProcess);
+    if (!terminated) {
+      return {
+        terminated: false,
+        message: 'Failed to terminate the Unity process.',
+      };
+    }
+
+    let cleanupMessage: string | undefined = undefined;
+    try {
+      await this.unityTempDirectoryCleaner.clean(project.path);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      console.error('Failed to clean Unity Temp directory:', message);
+      cleanupMessage = `Unity terminated, but failed to clean Temp: ${message}`;
+    }
+
+    return {
+      terminated: true,
+      message: cleanupMessage,
+    };
   }
 }
