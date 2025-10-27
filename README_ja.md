@@ -3,6 +3,8 @@
 [English version](README.md)
 
 Unity Hubと同じ内容をInkベースのTUIで表示し、上下キー/`j`/`k`でプロジェクトを選択して`o`でUnity Editorを起動するCLIです。
+<img width="1678" height="1460" alt="スクリーンショット 2025-10-27 23 44 40" src="https://github.com/user-attachments/assets/f880f5ba-4334-46a6-ac59-1ea5611213b8" />
+
 
 ## 必要環境
 
