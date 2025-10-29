@@ -863,20 +863,30 @@ export const App: React.FC<AppProps> = ({
     const innerWidth = modalWidth - 2;
     const BORDER_ON = '\u001B[32m';
     const BORDER_OFF = '\u001B[39m';
+    const fixedPrefixWidth = 2; // unify left margin for title and items
     const buildContentLine = (label: string, selected: boolean): string => {
       const arrow = selected ? '> ' : '  ';
-      const plainFull = `${arrow}${label}`;
-      const visible = stringWidth(plainFull) > innerWidth ? `${truncateToWidth(plainFull, Math.max(0, innerWidth - 3))}...` : plainFull;
-      const pad = Math.max(0, innerWidth - stringWidth(visible));
-      const colored = selected ? `\u001B[32m${visible}\u001B[39m` : visible;
+      const maxLabelWidth = Math.max(0, innerWidth - fixedPrefixWidth);
+      const rawLabel = label;
+      const limitedLabel = stringWidth(rawLabel) > maxLabelWidth
+        ? `${truncateToWidth(rawLabel, Math.max(0, maxLabelWidth - 3))}...`
+        : rawLabel;
+      const visibleBase = `${arrow}${limitedLabel}`; // width = fixedPrefixWidth + labelWidth
+      const colored = selected ? `\u001B[32m${visibleBase}\u001B[39m` : visibleBase;
+      const pad = Math.max(0, innerWidth - stringWidth(visibleBase));
       return `${BORDER_ON}│${BORDER_OFF}${colored}${' '.repeat(pad)}${BORDER_ON}│${BORDER_OFF}`;
     };
 
     const contentLines: string[] = [
       (() => {
-        const visibleTitle = stringWidth(title) > innerWidth ? `${truncateToWidth(title, Math.max(0, innerWidth - 3))}...` : title;
-        const pad = Math.max(0, innerWidth - stringWidth(visibleTitle));
-        return `${BORDER_ON}│${BORDER_OFF}${visibleTitle}${' '.repeat(pad)}${BORDER_ON}│${BORDER_OFF}`;
+        const prefix = '  ';
+        const maxTitleWidth = Math.max(0, innerWidth - fixedPrefixWidth);
+        const visibleTitle = stringWidth(title) > maxTitleWidth
+          ? `${truncateToWidth(title, Math.max(0, maxTitleWidth - 3))}...`
+          : title;
+        const content = `${prefix}${visibleTitle}`;
+        const pad = Math.max(0, innerWidth - stringWidth(content));
+        return `${BORDER_ON}│${BORDER_OFF}${content}${' '.repeat(pad)}${BORDER_ON}│${BORDER_OFF}`;
       })(),
       `${BORDER_ON}│${BORDER_OFF}${' '.repeat(innerWidth)}${BORDER_ON}│${BORDER_OFF}`,
       buildContentLine(linePrimary, sortMenuIndex === 0),
