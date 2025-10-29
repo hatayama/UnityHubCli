@@ -226,6 +226,7 @@ export const App: React.FC<AppProps> = ({
   const [isSortMenuOpen, setIsSortMenuOpen] = useState(false);
   const [sortMenuIndex, setSortMenuIndex] = useState(0);
   const [sortPreferences, setSortPreferences] = useState<SortPreferences>(getDefaultSortPreferences());
+  const [isSortPreferencesLoaded, setIsSortPreferencesLoaded] = useState<boolean>(false);
   const [renderEpoch, setRenderEpoch] = useState(0);
   const linesPerProject = (showBranch ? 1 : 0) + (showPath ? 1 : 0) + 2;
 
@@ -305,13 +306,18 @@ export const App: React.FC<AppProps> = ({
         setSortPreferences(prefs);
       } catch {
         // ignore and keep defaults
+      } finally {
+        setIsSortPreferencesLoaded(true);
       }
     })();
   }, []);
 
   useEffect(() => {
+    if (!isSortPreferencesLoaded) {
+      return;
+    }
     void writeSortPreferences(sortPreferences);
-  }, [sortPreferences]);
+  }, [sortPreferences, isSortPreferencesLoaded]);
 
   useEffect(() => {
     const handleSigint = () => {
