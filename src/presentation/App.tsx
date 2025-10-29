@@ -597,7 +597,7 @@ export const App: React.FC<AppProps> = ({
     return visibleProjects.map(({ project, repository, launchStatus }, offset) => {
       const rowIndex = startIndex + offset;
       const isSelected = rowIndex === index;
-      const arrow: string = isSelected ? '>' : ' ';
+      const selectionBar: string = isSelected ? '┃' : ' ';
       const projectName: string = formatProjectName(project, repository, useGitRootName);
       const versionLabel: string = `(${project.version.value})`;
       const updatedText: string | undefined = formatUpdatedText(project.lastModified);
@@ -630,30 +630,30 @@ export const App: React.FC<AppProps> = ({
 
       return (
         <Box key={project.id} flexDirection="row">
-          <Box flexGrow={1} flexDirection="column">
+          {/* left selection indicator */}
+          <Box width={1} flexDirection="column" alignItems="center" marginLeft={isSelected ? 1 : 0}>
+            <Text color={isSelected ? 'green' : undefined}>{selectionBar}</Text>
+            {showBranch ? <Text color={isSelected ? 'green' : undefined}>{selectionBar}</Text> : null}
+            {showPath ? <Text color={isSelected ? 'green' : undefined}>{selectionBar}</Text> : null}
+          </Box>
+          <Box flexGrow={1} flexDirection="column" marginLeft={isSelected ? 2 : 1}>
             <Text wrap="truncate">
-              <Text color={isSelected ? 'green' : PROJECT_COLOR} bold>
-                {arrow} {projectName}
+              <Text color={PROJECT_COLOR} bold>
+                {projectName}
               </Text>
-              <Text color={isSelected ? 'green' : undefined}> {versionLabel}</Text>
+              <Text> {versionLabel}</Text>
               {updatedText ? (
-                <Text color={isSelected ? 'green' : undefined}>{`  ${updatedText}`}</Text>
+                <Text>{`  ${updatedText}`}</Text>
               ) : null}
               {statusLabel && statusColor ? (
                 <Text color={statusColor}>{`  ${statusLabel}`}</Text>
               ) : null}
             </Text>
             {showBranch ? (
-              <Text color={isSelected ? 'green' : BRANCH_COLOR} wrap="truncate">
-                {'  '}
-                {branchLine}
-              </Text>
+              <Text color={BRANCH_COLOR} wrap="truncate">{branchLine}</Text>
             ) : null}
             {showPath ? (
-              <Text color={isSelected ? 'green' : PATH_COLOR} wrap="truncate">
-                {'  '}
-                {pathLine}
-              </Text>
+              <Text color={PATH_COLOR} wrap="truncate">{pathLine}</Text>
             ) : null}
             <Text> </Text>
           </Box>
