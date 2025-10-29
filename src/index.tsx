@@ -39,6 +39,7 @@ const bootstrap = async (): Promise<void> => {
   const terminateProjectUseCase = new TerminateProjectUseCase(
     unityProcessReader,
     unityProcessTerminator,
+    unityTempDirectoryCleaner,
   );
   const useGitRootName = !process.argv.includes('--no-git-root-name');
   const showBranch = !process.argv.includes('--hide-branch');

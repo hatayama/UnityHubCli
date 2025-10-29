@@ -30,7 +30,9 @@ export interface IUnityProcessLockChecker {
 }
 
 export interface IUnityProcessTerminator {
-  terminate(unityProcess: UnityProcess): Promise<boolean>;
+  terminate(
+    unityProcess: UnityProcess,
+  ): Promise<{ readonly terminated: boolean; readonly stage?: 'graceful' | 'sigterm' | 'sigkill' }>;
 }
 
 export interface IUnityProcessReader {

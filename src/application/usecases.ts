@@ -8,6 +8,7 @@ import type {
   IUnityProcessLockChecker,
   IUnityProcessReader,
   IUnityProcessTerminator,
+  IUnityTempDirectoryCleaner,
   IUnityProjectLockReader,
   IUnityProjectOptionsReader,
 } from './ports.js';
@@ -104,6 +105,7 @@ export class TerminateProjectUseCase {
   constructor(
     private readonly unityProcessReader: IUnityProcessReader,
     private readonly unityProcessTerminator: IUnityProcessTerminator,
+    private readonly unityTempDirectoryCleaner: IUnityTempDirectoryCleaner,
   ) {}
 
   async execute(
@@ -117,12 +119,23 @@ export class TerminateProjectUseCase {
       };
     }
 
-    const terminated = await this.unityProcessTerminator.terminate(unityProcess);
-    if (!terminated) {
+    const termination = await this.unityProcessTerminator.terminate(unityProcess);
+    if (!termination.terminated) {
       return {
         terminated: false,
         message: 'Failed to terminate the Unity process.',
       };
+    }
+
+    // Clean Temp only for stage 2 or 3 (sigterm/sigkill). Skip for 'graceful'.
+    if (termination.stage === 'sigterm' || termination.stage === 'sigkill') {
+      try {
+        await this.unityTempDirectoryCleaner.clean(project.path);
+      } catch (error) {
+        const message = error instanceof Error ? error.message : String(error);
+        // eslint-disable-next-line no-console
+        console.error(`Failed to clean Temp directory after termination: ${message}`);
+      }
     }
 
     return {
