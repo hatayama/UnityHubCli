@@ -16,7 +16,7 @@ const PROCESS_LIST_ARGS = ['-axo', 'pid=,command=', '-ww'];
 const PROCESS_LIST_COMMAND = 'ps';
 const TERMINATE_TIMEOUT_MILLIS = 5_000;
 const TERMINATE_POLL_INTERVAL_MILLIS = 200;
-const GRACEFUL_QUIT_TIMEOUT_MILLIS = 10_000;
+const GRACEFUL_QUIT_TIMEOUT_MILLIS = 3_000;
 const GRACEFUL_QUIT_POLL_INTERVAL_MILLIS = 200;
 
 const delay = async (duration: number): Promise<void> => {
