@@ -137,8 +137,13 @@ const shortenHomePath = (targetPath: string): string => {
 };
 
 const buildCdCommand = (targetPath: string): string => {
-  const escapedPath = targetPath.replaceAll('"', '\\"');
-  return `cd "${escapedPath}"`;
+  // User requested unquoted path in the cd command
+  return `cd ${targetPath}`;
+};
+
+const getCopyTargetPath = (view: ProjectView): string => {
+  const root = view.repository?.root;
+  return root && root.length > 0 ? root : view.project.path;
 };
 
 // display width helpers to keep box borders aligned in terminals
@@ -422,7 +427,8 @@ export const App: React.FC<AppProps> = ({
   }, [index, limit, sortedProjects.length]);
 
   const copyProjectPath = useCallback(() => {
-    const projectPath = sortedProjects[index]?.project.path;
+    const projectView = sortedProjects[index];
+    const projectPath = projectView ? getCopyTargetPath(projectView) : undefined;
     if (!projectPath) {
       setHint('No project to copy');
       setTimeout(() => {
@@ -435,7 +441,7 @@ export const App: React.FC<AppProps> = ({
       const command = buildCdCommand(projectPath);
       clipboard.writeSync(command);
       const displayPath = shortenHomePath(projectPath);
-      setHint(`Copied command: cd "${displayPath}"`);
+      setHint(`Copied command: cd ${displayPath}`);
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
       setHint(`Failed to copy: ${message}`);
@@ -458,7 +464,8 @@ export const App: React.FC<AppProps> = ({
 
     const { project } = projectView;
     try {
-      const command = buildCdCommand(project.path);
+      const cdTarget = getCopyTargetPath(projectView);
+      const command = buildCdCommand(cdTarget);
       clipboard.writeSync(command);
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
