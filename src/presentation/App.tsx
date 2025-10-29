@@ -110,7 +110,7 @@ const homeDirectory = process.env.HOME ?? '';
 const homePrefix = homeDirectory ? `${homeDirectory}/` : '';
 const minimumVisibleProjectCount: number = 4;
 const defaultHintMessage =
-  'Move with arrows or j/k · Launch with o · Quit Unity with q · Refresh with r · Copy cd path with c';
+  'Move: ↑↓ or j/k · Open: o · Quit: q · Refresh: r · CopyPath: c';
 const PROJECT_COLOR = '#abd8e7';
 const BRANCH_COLOR = '#e3839c';
 const PATH_COLOR = '#719bd8';
@@ -227,12 +227,9 @@ export const App: React.FC<AppProps> = ({
       const borderRows = 2;
       const hintRows = 1;
       const reservedRows = borderRows + hintRows;
-      const availableRows = stdout.rows - reservedRows;
+      const availableRows = Math.max(0, stdout.rows - reservedRows);
       const rowsPerProject = Math.max(linesPerProject, 1);
-      const calculatedCount = Math.max(
-        minimumVisibleProjectCount,
-        Math.floor(availableRows / rowsPerProject),
-      );
+      const calculatedCount = Math.max(1, Math.floor(availableRows / rowsPerProject));
       setVisibleCount(calculatedCount);
     };
 
@@ -244,7 +241,7 @@ export const App: React.FC<AppProps> = ({
     };
   }, [linesPerProject, stdout]);
 
-  const limit = Math.max(minimumVisibleProjectCount, visibleCount);
+  const limit = Math.max(1, visibleCount);
 
   const move = useCallback(
     (delta: number) => {
@@ -634,7 +631,7 @@ export const App: React.FC<AppProps> = ({
       return (
         <Box key={project.id} flexDirection="row">
           <Box flexGrow={1} flexDirection="column">
-            <Text>
+            <Text wrap="truncate">
               <Text color={isSelected ? 'green' : PROJECT_COLOR} bold>
                 {arrow} {projectName}
               </Text>
@@ -647,13 +644,13 @@ export const App: React.FC<AppProps> = ({
               ) : null}
             </Text>
             {showBranch ? (
-              <Text color={isSelected ? 'green' : BRANCH_COLOR}>
+              <Text color={isSelected ? 'green' : BRANCH_COLOR} wrap="truncate">
                 {'  '}
                 {branchLine}
               </Text>
             ) : null}
             {showPath ? (
-              <Text color={isSelected ? 'green' : PATH_COLOR}>
+              <Text color={isSelected ? 'green' : PATH_COLOR} wrap="truncate">
                 {'  '}
                 {pathLine}
               </Text>
@@ -691,7 +688,7 @@ export const App: React.FC<AppProps> = ({
         )}
       </Box>
       <Box>
-        <Text>{hint}</Text>
+        <Text wrap="truncate">{hint}</Text>
       </Box>
     </Box>
   );
