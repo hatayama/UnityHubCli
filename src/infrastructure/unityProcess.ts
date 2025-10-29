@@ -16,6 +16,8 @@ const PROCESS_LIST_ARGS = ['-axo', 'pid=,command=', '-ww'];
 const PROCESS_LIST_COMMAND = 'ps';
 const TERMINATE_TIMEOUT_MILLIS = 5_000;
 const TERMINATE_POLL_INTERVAL_MILLIS = 200;
+const GRACEFUL_QUIT_TIMEOUT_MILLIS = 10_000;
+const GRACEFUL_QUIT_POLL_INTERVAL_MILLIS = 200;
 
 const delay = async (duration: number): Promise<void> => {
   await new Promise<void>((resolveDelay) => {
@@ -136,12 +138,42 @@ export class MacUnityProcessReader implements IUnityProcessReader {
 }
 
 export class MacUnityProcessTerminator implements IUnityProcessTerminator {
-  async terminate(unityProcess: UnityProcess): Promise<boolean> {
+  async terminate(
+    unityProcess: UnityProcess,
+  ): Promise<{ readonly terminated: boolean; readonly stage?: 'graceful' | 'sigterm' | 'sigkill' }> {
+    // Try graceful quit on macOS first (simulate Command+Q to trigger Unity's own cleanup)
+    let attemptedGraceful: boolean = false;
+    if (process.platform === 'darwin') {
+      attemptedGraceful = true;
+      try {
+        const script = [
+          'tell application "System Events"',
+          `  set frontmost of (first process whose unix id is ${unityProcess.pid}) to true`,
+          '  keystroke "q" using {command down}',
+          'end tell',
+        ].join('\n');
+        await execFileAsync('osascript', ['-e', script]);
+
+        const deadlineGraceful = Date.now() + GRACEFUL_QUIT_TIMEOUT_MILLIS;
+        while (Date.now() < deadlineGraceful) {
+          await delay(GRACEFUL_QUIT_POLL_INTERVAL_MILLIS);
+          const alive = ensureProcessAlive(unityProcess.pid);
+          if (!alive) {
+            return { terminated: true, stage: 'graceful' };
+          }
+        }
+      } catch {
+        // Ignore AppleScript errors and fall back to SIGTERM
+      }
+    }
+
+    // Stage 2: SIGTERM (gentle termination)
     try {
       process.kill(unityProcess.pid, 'SIGTERM');
     } catch (error) {
       if (isProcessMissingError(error)) {
-        return false;
+        // Process already exited, likely due to the graceful attempt
+        return { terminated: true, stage: attemptedGraceful ? 'graceful' : 'sigterm' };
       }
       throw new Error(
         `Failed to terminate the Unity process (PID: ${unityProcess.pid}): ${error instanceof Error ? error.message : String(error)}`,
@@ -153,15 +185,16 @@ export class MacUnityProcessTerminator implements IUnityProcessTerminator {
       await delay(TERMINATE_POLL_INTERVAL_MILLIS);
       const alive = ensureProcessAlive(unityProcess.pid);
       if (!alive) {
-        return true;
+        return { terminated: true, stage: 'sigterm' };
       }
     }
 
+    // Stage 3: SIGKILL (forceful termination)
     try {
       process.kill(unityProcess.pid, 'SIGKILL');
     } catch (error) {
       if (isProcessMissingError(error)) {
-        return true;
+        return { terminated: true, stage: 'sigkill' };
       }
       throw new Error(
         `Failed to forcefully terminate the Unity process (PID: ${unityProcess.pid}): ${error instanceof Error ? error.message : String(error)}`,
@@ -169,6 +202,7 @@ export class MacUnityProcessTerminator implements IUnityProcessTerminator {
     }
 
     await delay(TERMINATE_POLL_INTERVAL_MILLIS);
-    return !ensureProcessAlive(unityProcess.pid);
+    const aliveAfterKill = ensureProcessAlive(unityProcess.pid);
+    return aliveAfterKill ? { terminated: false } : { terminated: true, stage: 'sigkill' };
   }
 }
