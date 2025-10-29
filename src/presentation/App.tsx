@@ -631,7 +631,7 @@ export const App: React.FC<AppProps> = ({
       return (
         <Box key={project.id} flexDirection="row">
           <Box flexGrow={1} flexDirection="column">
-            <Text>
+            <Text wrap="truncate">
               <Text color={isSelected ? 'green' : PROJECT_COLOR} bold>
                 {arrow} {projectName}
               </Text>
@@ -644,13 +644,13 @@ export const App: React.FC<AppProps> = ({
               ) : null}
             </Text>
             {showBranch ? (
-              <Text color={isSelected ? 'green' : BRANCH_COLOR}>
+              <Text color={isSelected ? 'green' : BRANCH_COLOR} wrap="truncate">
                 {'  '}
                 {branchLine}
               </Text>
             ) : null}
             {showPath ? (
-              <Text color={isSelected ? 'green' : PATH_COLOR}>
+              <Text color={isSelected ? 'green' : PATH_COLOR} wrap="truncate">
                 {'  '}
                 {pathLine}
               </Text>
@@ -688,7 +688,7 @@ export const App: React.FC<AppProps> = ({
         )}
       </Box>
       <Box>
-        <Text>{hint}</Text>
+        <Text wrap="truncate">{hint}</Text>
       </Box>
     </Box>
   );
