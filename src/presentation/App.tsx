@@ -5,6 +5,8 @@ import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import type { LaunchStatus, ProjectView } from '../application/usecases.js';
 import { LaunchCancelledError } from '../application/usecases.js';
 import type { GitBranch, GitRepositoryInfo, UnityProject } from '../domain/models.js';
+import type { SortDirection, SortPreferences, SortPrimary } from '../infrastructure/config.js';
+import { getDefaultSortPreferences, readSortPreferences, writeSortPreferences } from '../infrastructure/config.js';
 
 type TerminateResult = { readonly terminated: boolean; readonly message?: string };
 
@@ -110,7 +112,7 @@ const homeDirectory = process.env.HOME ?? '';
 const homePrefix = homeDirectory ? `${homeDirectory}/` : '';
 const minimumVisibleProjectCount: number = 4;
 const defaultHintMessage =
-  'Move: ↑↓ or j/k · Open: o · Quit: q · Refresh: r · CopyPath: c';
+  'Select: j/k · Open: o · Quit: q · Refresh: r · CopyPath: c · Sort: s · Close: ctrl + c';
 const PROJECT_COLOR = '#abd8e7';
 const BRANCH_COLOR = '#e3839c';
 const PATH_COLOR = '#719bd8';
@@ -137,6 +139,54 @@ const shortenHomePath = (targetPath: string): string => {
 const buildCdCommand = (targetPath: string): string => {
   const escapedPath = targetPath.replaceAll('"', '\\"');
   return `cd "${escapedPath}"`;
+};
+
+// display width helpers to keep box borders aligned in terminals
+const isControl = (code: number): boolean => (code >= 0 && code < 32) || (code >= 0x7f && code < 0xa0);
+const isFullwidth = (code: number): boolean => {
+  if (
+    code >= 0x1100 &&
+    (code <= 0x115f || // Hangul Jamo
+      code === 0x2329 ||
+      code === 0x232a ||
+      (code >= 0x2e80 && code <= 0xa4cf && code !== 0x303f) || // CJK ... Yi
+      (code >= 0xac00 && code <= 0xd7a3) || // Hangul Syllables
+      (code >= 0xf900 && code <= 0xfaff) || // CJK Compatibility Ideographs
+      (code >= 0xfe10 && code <= 0xfe19) || // Vertical forms
+      (code >= 0xfe30 && code <= 0xfe6f) || // CJK Compatibility Forms
+      (code >= 0xff00 && code <= 0xff60) || // Fullwidth forms
+      (code >= 0xffe0 && code <= 0xffe6) ||
+      (code >= 0x1f300 && code <= 0x1f64f) || // Emojis
+      (code >= 0x1f900 && code <= 0x1f9ff) ||
+      (code >= 0x20000 && code <= 0x3fffd))
+  ) {
+    return true;
+  }
+  return false;
+};
+const charWidth = (char: string): number => {
+  const code = char.codePointAt(0);
+  if (code === undefined) return 0;
+  if (isControl(code)) return 0;
+  return isFullwidth(code) ? 2 : 1;
+};
+const stringWidth = (text: string): number => {
+  let width = 0;
+  for (const ch of text) {
+    width += charWidth(ch);
+  }
+  return width;
+};
+const truncateToWidth = (text: string, maxWidth: number): string => {
+  let width = 0;
+  let result = '';
+  for (const ch of text) {
+    const w = charWidth(ch);
+    if (width + w > maxWidth) break;
+    result += ch;
+    width += w;
+  }
+  return result;
 };
 
 type AppProps = {
@@ -168,42 +218,95 @@ export const App: React.FC<AppProps> = ({
   const [releasedProjects, setReleasedProjects] = useState<ReadonlySet<string>>(new Set());
   const [launchedProjects, setLaunchedProjects] = useState<ReadonlySet<string>>(new Set());
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [isSortMenuOpen, setIsSortMenuOpen] = useState(false);
+  const [sortMenuIndex, setSortMenuIndex] = useState(0);
+  const [sortPreferences, setSortPreferences] = useState<SortPreferences>(getDefaultSortPreferences());
+  const [renderEpoch, setRenderEpoch] = useState(0);
   const linesPerProject = (showBranch ? 1 : 0) + (showPath ? 1 : 0) + 2;
+
+  const forceFullRepaint = useCallback((): void => {
+    if (!stdout) {
+      return;
+    }
+    // Clear entire screen and scrollback, move cursor to home.
+    stdout.write('\x1B[2J\x1B[3J\x1B[H');
+  }, [stdout]);
 
   const sortedProjects = useMemo(() => {
     const fallbackTime = 0;
 
-    const toSortKey = (view: ProjectView): string => {
-      if (useGitRootName) {
-        const rootName = extractRootFolder(view.repository);
-        if (rootName) {
-          return rootName.toLocaleLowerCase();
-        }
-      }
-      return view.project.title.toLocaleLowerCase();
+    const getNameKey = (view: ProjectView): string => {
+      const rootName = extractRootFolder(view.repository);
+      const base = rootName || view.project.title;
+      return base.toLocaleLowerCase();
     };
 
-    const toTieBreaker = (view: ProjectView): string => view.project.path.toLocaleLowerCase();
+    const tieBreaker = (view: ProjectView): string => view.project.path.toLocaleLowerCase();
+
+    const compareByUpdated = (a: ProjectView, b: ProjectView, direction: SortDirection): number => {
+      const timeA = a.project.lastModified?.getTime() ?? fallbackTime;
+      const timeB = b.project.lastModified?.getTime() ?? fallbackTime;
+      if (timeA === timeB) {
+        return 0;
+      }
+      return direction === 'desc' ? timeB - timeA : timeA - timeB;
+    };
+
+    const compareByName = (a: ProjectView, b: ProjectView, direction: SortDirection): number => {
+      const keyA = getNameKey(a);
+      const keyB = getNameKey(b);
+      if (keyA === keyB) {
+        return 0;
+      }
+      return direction === 'desc' ? keyB.localeCompare(keyA) : keyA.localeCompare(keyB);
+    };
 
     return [...projectViews].sort((a, b) => {
-      if (a.project.favorite !== b.project.favorite) {
+      if (sortPreferences.favoritesFirst && a.project.favorite !== b.project.favorite) {
         return a.project.favorite ? -1 : 1;
       }
 
-      const timeA = a.project.lastModified?.getTime() ?? fallbackTime;
-      const timeB = b.project.lastModified?.getTime() ?? fallbackTime;
-      if (timeA !== timeB) {
-        return timeB - timeA;
+      const primary: SortPrimary = sortPreferences.primary;
+      const direction: SortDirection = sortPreferences.direction;
+
+      if (primary === 'updated') {
+        const updatedOrder = compareByUpdated(a, b, direction);
+        if (updatedOrder !== 0) {
+          return updatedOrder;
+        }
+        const nameOrder = compareByName(a, b, 'asc');
+        if (nameOrder !== 0) {
+          return nameOrder;
+        }
+        return tieBreaker(a).localeCompare(tieBreaker(b));
       }
 
-      const keyA = toSortKey(a);
-      const keyB = toSortKey(b);
-      if (keyA === keyB) {
-        return toTieBreaker(a).localeCompare(toTieBreaker(b));
+      const nameOrder = compareByName(a, b, direction);
+      if (nameOrder !== 0) {
+        return nameOrder;
       }
-      return keyA.localeCompare(keyB);
+      const updatedOrder = compareByUpdated(a, b, 'desc');
+      if (updatedOrder !== 0) {
+        return updatedOrder;
+      }
+      return tieBreaker(a).localeCompare(tieBreaker(b));
     });
-  }, [projectViews, useGitRootName]);
+  }, [projectViews, sortPreferences]);
+
+  useEffect(() => {
+    void (async () => {
+      try {
+        const prefs = await readSortPreferences();
+        setSortPreferences(prefs);
+      } catch {
+        // ignore and keep defaults
+      }
+    })();
+  }, []);
+
+  useEffect(() => {
+    void writeSortPreferences(sortPreferences);
+  }, [sortPreferences]);
 
   useEffect(() => {
     const handleSigint = () => {
@@ -515,6 +618,55 @@ export const App: React.FC<AppProps> = ({
   }, [isRefreshing, onRefresh, sortedProjects]);
 
   useInput((input, key) => {
+    if (isSortMenuOpen) {
+      if (key.escape || input === '\u001b') {
+        clearOverlay();
+        forceFullRepaint();
+        setIsSortMenuOpen(false);
+        setRenderEpoch((prev) => prev + 1);
+        return;
+      }
+
+      if (input === 'j') {
+        setSortMenuIndex((prev) => {
+          const last = 2; // 0..2 (Primary, Direction, Favorites)
+          const next = prev + 1;
+          return next > last ? 0 : next;
+        });
+        return;
+      }
+      if (input === 'k') {
+        setSortMenuIndex((prev) => {
+          const last = 2;
+          const next = prev - 1;
+          return next < 0 ? last : next;
+        });
+        return;
+      }
+
+      const toggleCurrent = (): void => {
+        if (sortMenuIndex === 0) {
+          setSortPreferences((prev) => ({ ...prev, primary: prev.primary === 'updated' ? 'name' : 'updated' }));
+          return;
+        }
+        if (sortMenuIndex === 1) {
+          setSortPreferences((prev) => ({ ...prev, direction: prev.direction === 'asc' ? 'desc' : 'asc' }));
+          return;
+        }
+        setSortPreferences((prev) => ({ ...prev, favoritesFirst: !prev.favoritesFirst }));
+      };
+
+      if (input === ' ') {
+        toggleCurrent();
+      }
+      return;
+    }
+
+    if (input === 'S' || input === 's') {
+      setIsSortMenuOpen(true);
+      return;
+    }
+
     if (input === 'j' || key.downArrow) {
       move(1);
     }
@@ -678,8 +830,150 @@ export const App: React.FC<AppProps> = ({
     visibleProjects,
   ]);
 
+  // Overlay painter: draws popup on top of the list without clearing background
+  useEffect(() => {
+    if (!isSortMenuOpen || !stdout) {
+      return;
+    }
+
+    const columns: number = typeof stdout.columns === 'number' ? stdout.columns : 80;
+    const contentRows: number = rows.length === 0 ? 1 : visibleProjects.length * linesPerProject;
+    // top + bottom borders: kept for documentation
+    // const borderRows = 2;
+    // const hintRows = 1;
+
+    const contentWidth: number = Math.max(10, columns - 2);
+    const modalInnerWidth: number = Math.min(60, Math.max(28, contentWidth - 6));
+    const modalWidth: number = Math.min(contentWidth, modalInnerWidth);
+    const leftPadding: number = Math.max(0, Math.floor((contentWidth - modalWidth) / 2));
+
+    const title = 'Sort Menu (Select: j/k, Toggle: Space, Close: Esc)';
+    const linePrimary = `Primary: ${sortPreferences.primary === 'updated' ? 'Updated' : 'Name (Git root)'}`;
+    const lineDirection = `Direction: ${
+      sortPreferences.primary === 'updated'
+        ? sortPreferences.direction === 'desc'
+          ? 'New to Old'
+          : 'Old to New'
+        : sortPreferences.direction === 'asc'
+          ? 'A to Z'
+          : 'Z to A'
+    }`;
+    const lineFav = `Favorites first: ${sortPreferences.favoritesFirst ? 'ON' : 'OFF'}`;
+
+    const innerWidth = modalWidth - 2;
+    const BORDER_ON = '\u001B[32m';
+    const BORDER_OFF = '\u001B[39m';
+    const buildContentLine = (label: string, selected: boolean): string => {
+      const arrow = selected ? '> ' : '  ';
+      const plainFull = `${arrow}${label}`;
+      const visible = stringWidth(plainFull) > innerWidth ? `${truncateToWidth(plainFull, Math.max(0, innerWidth - 3))}...` : plainFull;
+      const pad = Math.max(0, innerWidth - stringWidth(visible));
+      const colored = selected ? `\u001B[32m${visible}\u001B[39m` : visible;
+      return `${BORDER_ON}│${BORDER_OFF}${colored}${' '.repeat(pad)}${BORDER_ON}│${BORDER_OFF}`;
+    };
+
+    const contentLines: string[] = [
+      (() => {
+        const visibleTitle = stringWidth(title) > innerWidth ? `${truncateToWidth(title, Math.max(0, innerWidth - 3))}...` : title;
+        const pad = Math.max(0, innerWidth - stringWidth(visibleTitle));
+        return `${BORDER_ON}│${BORDER_OFF}${visibleTitle}${' '.repeat(pad)}${BORDER_ON}│${BORDER_OFF}`;
+      })(),
+      `${BORDER_ON}│${BORDER_OFF}${' '.repeat(innerWidth)}${BORDER_ON}│${BORDER_OFF}`,
+      buildContentLine(linePrimary, sortMenuIndex === 0),
+      buildContentLine(lineDirection, sortMenuIndex === 1),
+      buildContentLine(lineFav, sortMenuIndex === 2),
+    ];
+
+    const topBorder = `${BORDER_ON}┌${'─'.repeat(modalWidth - 2)}┐${BORDER_OFF}`;
+    const bottomBorder = `${BORDER_ON}└${'─'.repeat(modalWidth - 2)}┘${BORDER_OFF}`;
+    const overlayLines = [topBorder, ...contentLines, bottomBorder];
+    const overlayHeight = overlayLines.length;
+
+    const overlayTopWithinContent = Math.max(0, Math.floor((contentRows - overlayHeight) / 2));
+    const overlayTopRelativeToComponent = 1 + overlayTopWithinContent; // inside border
+    const bottomIndex = contentRows + 2; // hint line index
+    const moveUp = Math.max(0, bottomIndex - overlayTopRelativeToComponent);
+    const moveRight = 1 + leftPadding; // inside left border + padding
+
+    // save cursor
+    stdout.write('\u001B7');
+    // move up to overlay top
+    if (moveUp > 0) {
+      stdout.write(`\u001B[${moveUp}A`);
+    }
+    // ensure column 1
+    stdout.write('\r');
+
+    // draw overlay (clear exact region first to avoid artifacts)
+    for (let i = 0; i < overlayLines.length; i++) {
+      // start of line
+      stdout.write('\r');
+      if (moveRight > 0) {
+        stdout.write(`\u001B[${moveRight}C`);
+      }
+      // clear region width
+      stdout.write(' '.repeat(Math.max(0, modalWidth)));
+      // move cursor left by modal width
+      stdout.write(`\u001B[${Math.max(0, modalWidth)}D`);
+      // draw line
+      stdout.write(overlayLines[i]);
+      if (i < overlayLines.length - 1) {
+        stdout.write('\r\n');
+      }
+    }
+
+    // restore cursor
+    stdout.write('\u001B8');
+  }, [
+    isSortMenuOpen,
+    linesPerProject,
+    rows,
+    sortPreferences,
+    sortMenuIndex,
+    stdout,
+    visibleProjects.length,
+  ]);
+
+  const clearOverlay = useCallback((): void => {
+    if (!stdout) {
+      return;
+    }
+    const columns: number = typeof stdout.columns === 'number' ? stdout.columns : 80;
+    const contentRows: number = rows.length === 0 ? 1 : visibleProjects.length * linesPerProject;
+    const contentWidth: number = Math.max(10, columns - 2);
+    const modalInnerWidth: number = Math.min(60, Math.max(28, contentWidth - 6));
+    const modalWidth: number = Math.min(contentWidth, modalInnerWidth);
+    const leftPadding: number = Math.max(0, Math.floor((contentWidth - modalWidth) / 2));
+
+    const overlayHeight = 6; // borders(2) + title(1) + items(3)
+    const overlayTopWithinContent = Math.max(0, Math.floor((contentRows - overlayHeight) / 2));
+    const overlayTopRelativeToComponent = 1 + overlayTopWithinContent; // inside border
+    const bottomIndex = contentRows + 2; // hint line index
+    const moveUp = Math.max(0, bottomIndex - overlayTopRelativeToComponent);
+    const moveRight = 1 + leftPadding; // inside left border + padding
+
+    stdout.write('\u001B7');
+    if (moveUp > 0) {
+      stdout.write(`\u001B[${moveUp}A`);
+    }
+    stdout.write('\r');
+    for (let i = 0; i < overlayHeight; i++) {
+      stdout.write('\r');
+      if (moveRight > 0) {
+        stdout.write(`\u001B[${moveRight}C`);
+      }
+      stdout.write(' '.repeat(Math.max(0, modalWidth)));
+      if (i < overlayHeight - 1) {
+        stdout.write('\r\n');
+      }
+    }
+    stdout.write('\u001B8');
+  }, [linesPerProject, rows.length, visibleProjects.length, stdout]);
+
+  // no-op: avoid unused variable warnings; width is accessible via stdout when needed
+
   return (
-    <Box flexDirection="column">
+    <Box key={renderEpoch} flexDirection="column">
       <Box flexDirection="column" borderStyle="round" borderColor="green">
         {rows.length === 0 ? (
           <Text>No Unity Hub projects were found.</Text>
