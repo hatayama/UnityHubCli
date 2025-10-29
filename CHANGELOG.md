@@ -1,5 +1,18 @@
 # Changelog
 
+## [0.9.0](https://github.com/hatayama/UnityHubCli/compare/unity-hub-cli-v0.8.0...unity-hub-cli-v0.9.0) (2025-10-29)
+
+
+### Features
+
+* **ui:** Add in-app sort menu modal with persistent preferences and git-root path copy ([#34](https://github.com/hatayama/UnityHubCli/issues/34)) ([44c7d00](https://github.com/hatayama/UnityHubCli/commit/44c7d00f3d8bdded429ff813e6ca4bed115bbf4d))
+
+
+### Bug Fixes
+
+* enhance project selection display in TUI ([#33](https://github.com/hatayama/UnityHubCli/issues/33)) ([e3dd5fd](https://github.com/hatayama/UnityHubCli/commit/e3dd5fd7558a46b3124c6ecba13d8114b22c41f1))
+* Prevent TUI overflow on narrow terminals; truncate lines; simplify hint ([#31](https://github.com/hatayama/UnityHubCli/issues/31)) ([10e9376](https://github.com/hatayama/UnityHubCli/commit/10e9376137aadac33148617528dbb64f3d0671f1))
+
 ## [0.8.0](https://github.com/hatayama/UnityHubCli/compare/unity-hub-cli-v0.7.0...unity-hub-cli-v0.8.0) (2025-10-29)
 
 
