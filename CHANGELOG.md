@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.8.0](https://github.com/hatayama/UnityHubCli/compare/unity-hub-cli-v0.7.0...unity-hub-cli-v0.8.0) (2025-10-29)
+
+
+### Features
+
+* 3-stage Unity termination and conditional Temp cleanup (3s graceful) ([#29](https://github.com/hatayama/UnityHubCli/issues/29)) ([dba44ee](https://github.com/hatayama/UnityHubCli/commit/dba44ee26e2bd1b7e9062ac9f15a170ff092db82))
+
 ## [0.7.0](https://github.com/hatayama/UnityHubCli/compare/unity-hub-cli-v0.6.1...unity-hub-cli-v0.7.0) (2025-10-27)
 
 
