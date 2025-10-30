@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.11.0](https://github.com/hatayama/UnityHubCli/compare/unity-hub-cli-v0.10.1...unity-hub-cli-v0.11.0) (2025-10-30)
+
+
+### Features
+
+* Visibility modal to toggle branch/path display and persist settings ([#39](https://github.com/hatayama/UnityHubCli/issues/39)) ([8e3388d](https://github.com/hatayama/UnityHubCli/commit/8e3388d0543d8c1e6679b489a756ac416b24b8c3))
+
 ## [0.10.1](https://github.com/hatayama/UnityHubCli/compare/unity-hub-cli-v0.10.0...unity-hub-cli-v0.10.1) (2025-10-30)
 
 
