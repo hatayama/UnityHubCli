@@ -1,15 +1,17 @@
 const homeDirectory: string = process.env.HOME ?? process.env.USERPROFILE ?? '';
-const homePrefix: string = homeDirectory ? `${homeDirectory}/` : '';
+const normalizedHomeDirectory: string = homeDirectory.replace(/\\/g, '/');
+const homePrefix: string = normalizedHomeDirectory ? `${normalizedHomeDirectory}/` : '';
 
 export const shortenHomePath = (targetPath: string): string => {
-  if (!homeDirectory) {
+  if (!normalizedHomeDirectory) {
     return targetPath;
   }
-  if (targetPath === homeDirectory) {
+  const normalizedTarget: string = targetPath.replace(/\\/g, '/');
+  if (normalizedTarget === normalizedHomeDirectory) {
     return '~';
   }
-  if (homePrefix && targetPath.startsWith(homePrefix)) {
-    return `~/${targetPath.slice(homePrefix.length)}`;
+  if (homePrefix && normalizedTarget.startsWith(homePrefix)) {
+    return `~/${normalizedTarget.slice(homePrefix.length)}`;
   }
   return targetPath;
 };
