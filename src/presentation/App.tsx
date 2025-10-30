@@ -10,7 +10,9 @@ import type { SortDirection, SortPrimary } from '../infrastructure/config.js';
 import { LayoutManager, getLayoutMode } from './components/LayoutManager.js';
 import { ProjectList } from './components/ProjectList.js';
 import { SortPanel } from './components/SortPanel.js';
+import { VisibilityPanel } from './components/VisibilityPanel.js';
 import { useSortPreferences } from './hooks/useSortPreferences.js';
+import { useVisibilityPreferences } from './hooks/useVisibilityPreferences.js';
 import { useVisibleCount } from './hooks/useVisibleCount.js';
 import { shortenHomePath, buildCdCommand } from './utils/path.js';
 
@@ -32,7 +34,7 @@ const extractRootFolder = (repository?: GitRepositoryInfo): string | undefined =
 
 const minimumVisibleProjectCount: number = 4;
 const defaultHintMessage =
-  'Select: j/k · Open: o · Quit: q · Refresh: r · CopyPath: c · Sort: s · Close: ctrl + c';
+  'Select: j/k · Open: o · Quit: q · Refresh: r · CopyPath: c · Sort: s · Visibility: v · Close: ctrl + c';
  
 
  
@@ -49,8 +51,6 @@ type AppProps = {
   readonly onTerminate: (project: UnityProject) => Promise<TerminateResult>;
   readonly onRefresh?: () => Promise<ProjectView[]>;
   readonly useGitRootName?: boolean;
-  readonly showBranch?: boolean;
-  readonly showPath?: boolean;
 };
 
 export const App: React.FC<AppProps> = ({
@@ -59,16 +59,21 @@ export const App: React.FC<AppProps> = ({
   onTerminate,
   onRefresh,
   useGitRootName = true,
-  showBranch = true,
-  showPath = true,
 }) => {
   const { exit } = useApp();
   const { stdout } = useStdout();
   const [projectViews, setProjectViews] = useState<readonly ProjectView[]>(projects);
   const [isSortMenuOpen, setIsSortMenuOpen] = useState(false);
+  const [isVisibilityMenuOpen, setIsVisibilityMenuOpen] = useState(false);
+  const { visibilityPreferences, setVisibilityPreferences } = useVisibilityPreferences();
+  const showBranch: boolean = visibilityPreferences.showBranch;
+  const showPath: boolean = visibilityPreferences.showPath;
+  const sortPanelHeight: number = 6; // borders(2) + title(1) + items(3)
+  const visibilityPanelHeight: number = 5; // borders(2) + title(1) + items(2)
   const linesPerProject = (showBranch ? 1 : 0) + (showPath ? 1 : 0) + 2;
-  const panelHeight: number = 6; // borders(2) + title(1) + items(3)
-  const visibleCount: number = useVisibleCount(stdout, linesPerProject, isSortMenuOpen, panelHeight, minimumVisibleProjectCount);
+  const isAnyMenuOpen = isSortMenuOpen || isVisibilityMenuOpen;
+  const panelHeight: number = isVisibilityMenuOpen ? visibilityPanelHeight : sortPanelHeight;
+  const visibleCount: number = useVisibleCount(stdout, linesPerProject, isAnyMenuOpen, panelHeight, minimumVisibleProjectCount);
   const [index, setIndex] = useState(0);
   const [hint, setHint] = useState<string>(defaultHintMessage);
   const [windowStart, setWindowStart] = useState(0);
@@ -474,8 +479,54 @@ export const App: React.FC<AppProps> = ({
       return;
     }
 
+    if (isVisibilityMenuOpen) {
+      if (key.escape || input === '\u001b') {
+        setIsVisibilityMenuOpen(false);
+        return;
+      }
+
+      if (input === 'j') {
+        setSortMenuIndex((prev) => {
+          const last = 1; // 0..1 (Show branch, Show path)
+          const next = prev + 1;
+          return next > last ? 0 : next;
+        });
+        return;
+      }
+      if (input === 'k') {
+        setSortMenuIndex((prev) => {
+          const last = 1;
+          const next = prev - 1;
+          return next < 0 ? last : next;
+        });
+        return;
+      }
+
+      const toggleCurrent = (): void => {
+        if (sortMenuIndex === 0) {
+          setVisibilityPreferences((prev) => ({ ...prev, showBranch: !prev.showBranch }));
+          return;
+        }
+        setVisibilityPreferences((prev) => ({ ...prev, showPath: !prev.showPath }));
+      };
+
+      if (input === ' ') {
+        toggleCurrent();
+      }
+      return;
+    }
+
     if (input === 'S' || input === 's') {
+      setIsVisibilityMenuOpen(false);
       setIsSortMenuOpen(true);
+      setSortMenuIndex(0);
+      return;
+    }
+
+    if (input === 'v' || input === 'V') {
+      setIsSortMenuOpen(false);
+      setIsVisibilityMenuOpen(true);
+      setSortMenuIndex(0);
       return;
     }
 
@@ -533,7 +584,7 @@ export const App: React.FC<AppProps> = ({
   return (
     <LayoutManager
       layoutMode={getLayoutMode()}
-      panelVisible={isSortMenuOpen}
+      panelVisible={isAnyMenuOpen}
       list={
         <Box
           flexDirection="column"
@@ -561,18 +612,34 @@ export const App: React.FC<AppProps> = ({
       }
       panel={
         <Box flexDirection="column" width={typeof stdout?.columns === 'number' ? stdout.columns : undefined}>
-          <Text>Sort Settings</Text>
-          <Box marginTop={1}>
-            <SortPanel
-              sortPreferences={sortPreferences}
-              focusedIndex={sortMenuIndex}
-              width={typeof stdout?.columns === 'number' ? stdout.columns : undefined}
-            />
-          </Box>
+          {isSortMenuOpen && (
+            <>
+              <Text>Sort Settings</Text>
+              <Box marginTop={1}>
+                <SortPanel
+                  sortPreferences={sortPreferences}
+                  focusedIndex={sortMenuIndex}
+                  width={typeof stdout?.columns === 'number' ? stdout.columns : undefined}
+                />
+              </Box>
+            </>
+          )}
+          {isVisibilityMenuOpen && (
+            <>
+              <Text>Visibility Settings</Text>
+              <Box marginTop={1}>
+                <VisibilityPanel
+                  visibility={visibilityPreferences}
+                  focusedIndex={sortMenuIndex}
+                  width={typeof stdout?.columns === 'number' ? stdout.columns : undefined}
+                />
+              </Box>
+            </>
+          )}
         </Box>
       }
       statusBar={
-        isSortMenuOpen ? (
+        isAnyMenuOpen ? (
           <Text wrap="truncate">Select: j/k, Toggle: Space, Back: Esc</Text>
         ) : (
           <Text wrap="truncate">{hint}</Text>

@@ -9,10 +9,30 @@ export type SortPreferences = {
   readonly direction: SortDirection;
 };
 
-const defaultPreferences: SortPreferences = {
+export type VisibilityPreferences = {
+  readonly showBranch: boolean;
+  readonly showPath: boolean;
+};
+
+export type AppConfig = {
+  readonly sort: SortPreferences;
+  readonly visibility: VisibilityPreferences;
+};
+
+const defaultSortPreferences: SortPreferences = {
   favoritesFirst: true,
   primary: 'updated',
   direction: 'desc',
+};
+
+const defaultVisibilityPreferences: VisibilityPreferences = {
+  showBranch: true,
+  showPath: true,
+};
+
+const defaultAppConfig: AppConfig = {
+  sort: defaultSortPreferences,
+  visibility: defaultVisibilityPreferences,
 };
 
 const getConfigDir = (): string => {
@@ -25,41 +45,82 @@ const getConfigPath = (): string => `${getConfigDir()}/config.json`;
 const isValidPrimary = (value: unknown): value is SortPrimary => value === 'updated' || value === 'name';
 const isValidDirection = (value: unknown): value is SortDirection => value === 'asc' || value === 'desc';
 
-const sanitizePreferences = (input: unknown): SortPreferences => {
+const sanitizeSort = (input: unknown): SortPreferences => {
   if (!input || typeof input !== 'object') {
-    return defaultPreferences;
+    return defaultSortPreferences;
   }
 
   const record = input as Record<string, unknown>;
-  const favoritesFirst: boolean = typeof record.favoritesFirst === 'boolean' ? record.favoritesFirst : defaultPreferences.favoritesFirst;
-  const primary: SortPrimary = isValidPrimary(record.primary) ? record.primary : defaultPreferences.primary;
-  const direction: SortDirection = isValidDirection(record.direction) ? record.direction : defaultPreferences.direction;
+  const favoritesFirst: boolean = typeof record.favoritesFirst === 'boolean' ? record.favoritesFirst : defaultSortPreferences.favoritesFirst;
+  const primary: SortPrimary = isValidPrimary(record.primary) ? record.primary : defaultSortPreferences.primary;
+  const direction: SortDirection = isValidDirection(record.direction) ? record.direction : defaultSortPreferences.direction;
 
   return { favoritesFirst, primary, direction };
 };
 
-export const readSortPreferences = async (): Promise<SortPreferences> => {
+const sanitizeVisibility = (input: unknown): VisibilityPreferences => {
+  if (!input || typeof input !== 'object') {
+    return defaultVisibilityPreferences;
+  }
+  const record = input as Record<string, unknown>;
+  const showBranch: boolean = typeof record.showBranch === 'boolean' ? record.showBranch : defaultVisibilityPreferences.showBranch;
+  const showPath: boolean = typeof record.showPath === 'boolean' ? record.showPath : defaultVisibilityPreferences.showPath;
+  return { showBranch, showPath };
+};
+
+const sanitizeAppConfig = (input: unknown): AppConfig => {
+  if (!input || typeof input !== 'object') {
+    return defaultAppConfig;
+  }
+  const record = input as Record<string, unknown>;
+  const sort: SortPreferences = sanitizeSort(record.sort);
+  const visibility: VisibilityPreferences = sanitizeVisibility(record.visibility);
+  return { sort, visibility };
+};
+
+const readAppConfig = async (): Promise<AppConfig> => {
   try {
     const content = await readFile(getConfigPath(), 'utf8');
     const json = JSON.parse(content) as unknown;
-    return sanitizePreferences(json);
+    return sanitizeAppConfig(json);
   } catch {
-    return defaultPreferences;
+    return defaultAppConfig;
   }
 };
 
-export const writeSortPreferences = async (prefs: SortPreferences): Promise<void> => {
+const writeAppConfig = async (config: AppConfig): Promise<void> => {
   try {
     await mkdir(getConfigDir(), { recursive: true });
   } catch {
     // ignore mkdir error (we'll try writing anyway)
   }
-
-  const sanitized = sanitizePreferences(prefs);
-  const json = JSON.stringify(sanitized, undefined, 2);
+  const json = JSON.stringify(sanitizeAppConfig(config), undefined, 2);
   await writeFile(getConfigPath(), json, 'utf8');
 };
 
-export const getDefaultSortPreferences = (): SortPreferences => defaultPreferences;
+export const readSortPreferences = async (): Promise<SortPreferences> => {
+  const config = await readAppConfig();
+  return config.sort;
+};
 
+export const writeSortPreferences = async (prefs: SortPreferences): Promise<void> => {
+  const current = await readAppConfig();
+  const next: AppConfig = { ...current, sort: sanitizeSort(prefs) };
+  await writeAppConfig(next);
+};
+
+export const getDefaultSortPreferences = (): SortPreferences => defaultSortPreferences;
+
+export const readVisibilityPreferences = async (): Promise<VisibilityPreferences> => {
+  const config = await readAppConfig();
+  return config.visibility;
+};
+
+export const writeVisibilityPreferences = async (prefs: VisibilityPreferences): Promise<void> => {
+  const current = await readAppConfig();
+  const next: AppConfig = { ...current, visibility: sanitizeVisibility(prefs) };
+  await writeAppConfig(next);
+};
+
+export const getDefaultVisibilityPreferences = (): VisibilityPreferences => defaultVisibilityPreferences;
 

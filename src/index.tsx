@@ -42,8 +42,6 @@ const bootstrap = async (): Promise<void> => {
     unityTempDirectoryCleaner,
   );
   const useGitRootName = !process.argv.includes('--no-git-root-name');
-  const showBranch = !process.argv.includes('--hide-branch');
-  const showPath = !process.argv.includes('--hide-path');
 
   try {
     const projects = await listProjectsUseCase.execute();
@@ -54,8 +52,6 @@ const bootstrap = async (): Promise<void> => {
         onTerminate={(project) => terminateProjectUseCase.execute(project)}
         onRefresh={() => listProjectsUseCase.execute()}
         useGitRootName={useGitRootName}
-        showBranch={showBranch}
-        showPath={showPath}
       />,
     );
     await waitUntilExit();
