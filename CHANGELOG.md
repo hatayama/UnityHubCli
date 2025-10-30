@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.10.1](https://github.com/hatayama/UnityHubCli/compare/unity-hub-cli-v0.10.0...unity-hub-cli-v0.10.1) (2025-10-30)
+
+
+### Bug Fixes
+
+* stabilize ProjectRow width using stdout columns; remove selection-based margin shift ([#37](https://github.com/hatayama/UnityHubCli/issues/37)) ([a79804f](https://github.com/hatayama/UnityHubCli/commit/a79804ffbf41344209a9de71bb8df661b4f6f75c))
+
 ## [0.10.0](https://github.com/hatayama/UnityHubCli/compare/unity-hub-cli-v0.9.0...unity-hub-cli-v0.10.0) (2025-10-30)
 
 
