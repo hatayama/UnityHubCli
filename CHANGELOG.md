@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.10.0](https://github.com/hatayama/UnityHubCli/compare/unity-hub-cli-v0.9.0...unity-hub-cli-v0.10.0) (2025-10-30)
+
+
+### Features
+
+* Refactor presentation layer and replace overlay modal with screen-based Sort ([#35](https://github.com/hatayama/UnityHubCli/issues/35)) ([f9fac54](https://github.com/hatayama/UnityHubCli/commit/f9fac5418c517dd3c1788adca58847a445da17b2))
+
 ## [0.9.0](https://github.com/hatayama/UnityHubCli/compare/unity-hub-cli-v0.8.0...unity-hub-cli-v0.9.0) (2025-10-29)
 
 
