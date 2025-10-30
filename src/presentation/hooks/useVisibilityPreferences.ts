@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 
 import type { VisibilityPreferences } from '../../infrastructure/config.js';
 import { getDefaultVisibilityPreferences, readVisibilityPreferences, writeVisibilityPreferences } from '../../infrastructure/config.js';
@@ -12,6 +12,7 @@ type UseVisibilityPreferencesResult = {
 export const useVisibilityPreferences = (): UseVisibilityPreferencesResult => {
   const [visibilityPreferences, setVisibilityPreferences] = useState<VisibilityPreferences>(getDefaultVisibilityPreferences());
   const [isLoaded, setIsLoaded] = useState<boolean>(false);
+  const writeQueueRef = useRef<Promise<void>>(Promise.resolve());
 
   useEffect(() => {
     void (async () => {
@@ -28,7 +29,9 @@ export const useVisibilityPreferences = (): UseVisibilityPreferencesResult => {
     if (!isLoaded) {
       return;
     }
-    void writeVisibilityPreferences(visibilityPreferences);
+    writeQueueRef.current = writeQueueRef.current
+      .catch(() => undefined)
+      .then(() => writeVisibilityPreferences(visibilityPreferences));
   }, [isLoaded, visibilityPreferences]);
 
   return { visibilityPreferences, setVisibilityPreferences, isLoaded };
