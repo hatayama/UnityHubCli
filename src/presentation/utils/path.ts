@@ -1,4 +1,4 @@
-const homeDirectory: string = process.env.HOME ?? '';
+const homeDirectory: string = process.env.HOME ?? process.env.USERPROFILE ?? '';
 const homePrefix: string = homeDirectory ? `${homeDirectory}/` : '';
 
 export const shortenHomePath = (targetPath: string): string => {
@@ -15,8 +15,12 @@ export const shortenHomePath = (targetPath: string): string => {
 };
 
 export const buildCdCommand = (targetPath: string): string => {
-  // User requested unquoted path in the cd command
-  return `cd ${targetPath}`;
+  if (process.platform === 'win32') {
+    const escapedForWindows: string = targetPath.replace(/"/g, '""');
+    return `cd "${escapedForWindows}"`;
+  }
+  const escapedForPosix: string = targetPath.replace(/'/g, "'\\''");
+  return `cd '${escapedForPosix}'`;
 };
 
 
