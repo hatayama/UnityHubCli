@@ -83,7 +83,9 @@ export const App: React.FC<AppProps> = ({
   const [sortMenuIndex, setSortMenuIndex] = useState(0);
   const { sortPreferences, setSortPreferences } = useSortPreferences();
 
-  
+  const clearScreen = useCallback((): void => {
+    stdout?.write('\x1B[2J\x1B[3J\x1B[H');
+  }, [stdout]);
 
   const sortedProjects = useMemo(() => {
     const fallbackTime = 0;
@@ -440,6 +442,7 @@ export const App: React.FC<AppProps> = ({
   useInput((input, key) => {
     if (isSortMenuOpen) {
       if (key.escape || input === '\u001b') {
+        clearScreen();
         setIsSortMenuOpen(false);
         return;
       }
@@ -481,6 +484,7 @@ export const App: React.FC<AppProps> = ({
 
     if (isVisibilityMenuOpen) {
       if (key.escape || input === '\u001b') {
+        clearScreen();
         setIsVisibilityMenuOpen(false);
         return;
       }
@@ -517,6 +521,7 @@ export const App: React.FC<AppProps> = ({
     }
 
     if (input === 'S' || input === 's') {
+      clearScreen();
       setIsVisibilityMenuOpen(false);
       setIsSortMenuOpen(true);
       setSortMenuIndex(0);
@@ -524,6 +529,7 @@ export const App: React.FC<AppProps> = ({
     }
 
     if (input === 'v' || input === 'V') {
+      clearScreen();
       setIsSortMenuOpen(false);
       setIsVisibilityMenuOpen(true);
       setSortMenuIndex(0);
