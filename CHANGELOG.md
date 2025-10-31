@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.12.0](https://github.com/hatayama/UnityHubCli/compare/unity-hub-cli-v0.11.0...unity-hub-cli-v0.12.0) (2025-10-31)
+
+
+### Features
+
+* add clearScreen function to enhance terminal UI experience ([#41](https://github.com/hatayama/UnityHubCli/issues/41)) ([0181eb0](https://github.com/hatayama/UnityHubCli/commit/0181eb00b3bc8298500696ae2555e87bfd876e1e))
+
 ## [0.11.0](https://github.com/hatayama/UnityHubCli/compare/unity-hub-cli-v0.10.1...unity-hub-cli-v0.11.0) (2025-10-30)
 
 
