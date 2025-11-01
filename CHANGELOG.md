@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.13.0](https://github.com/hatayama/UnityHubCli/compare/unity-hub-cli-v0.12.0...unity-hub-cli-v0.13.0) (2025-11-01)
+
+
+### Features
+
+* add Windows support ([#43](https://github.com/hatayama/UnityHubCli/issues/43)) ([cb28b68](https://github.com/hatayama/UnityHubCli/commit/cb28b68ccdcef0e826368a56c4f61de317e35c23))
+
 ## [0.12.0](https://github.com/hatayama/UnityHubCli/compare/unity-hub-cli-v0.11.0...unity-hub-cli-v0.12.0) (2025-10-31)
 
 
