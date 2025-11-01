@@ -18,6 +18,15 @@ export const shortenHomePath = (targetPath: string): string => {
 
 export const buildCdCommand = (targetPath: string): string => {
   if (process.platform === 'win32') {
+    const isGitBash: boolean = Boolean(process.env.MSYSTEM) || /bash/i.test(process.env.SHELL ?? '');
+    if (isGitBash) {
+      const windowsPath: string = targetPath;
+      const msysPath: string = windowsPath
+        .replace(/^([A-Za-z]):[\\/]/, (_, drive: string) => `/${drive.toLowerCase()}/`)
+        .replace(/\\/g, '/');
+      const escapedForPosix: string = msysPath.replace(/'/g, "'\\''");
+      return `cd '${escapedForPosix}'`;
+    }
     const escapedForWindows: string = targetPath.replace(/"/g, '""');
     return `cd "${escapedForWindows}"`;
   }

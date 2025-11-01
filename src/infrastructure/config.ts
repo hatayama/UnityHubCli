@@ -36,6 +36,10 @@ const defaultAppConfig: AppConfig = {
 };
 
 const getConfigDir = (): string => {
+  if (process.platform === 'win32') {
+    const appdata: string = process.env.APPDATA ?? '';
+    return appdata ? `${appdata}\\UnityHubCli` : 'UnityHubCli';
+  }
   const home: string = process.env.HOME ?? '';
   return `${home}/Library/Application Support/UnityHubCli`;
 };
