@@ -1,10 +1,11 @@
 import { readFile, writeFile } from 'node:fs/promises';
-import { basename } from 'node:path';
+import { basename, join } from 'node:path';
 
 import type { IUnityHubProjectsReader, IUnityProjectOptionsReader } from '../application/ports.js';
 import type { UnityProject } from '../domain/models.js';
 
-const HUB_PROJECTS_PATH = `${process.env.HOME ?? ''}/Library/Application Support/UnityHub/projects-v1.json`;
+const HUB_DIR = join(process.env.APPDATA ?? '', 'UnityHub');
+const HUB_PROJECTS_PATH = join(HUB_DIR, 'projects-v1.json');
 
 type UnityHubProjectEntry = {
   readonly title?: string | null;
@@ -71,7 +72,7 @@ const sortByFavoriteThenLastModified = (projects: readonly UnityProject[]): Unit
   });
 };
 
-export class MacUnityHubProjectsReader implements IUnityHubProjectsReader, IUnityProjectOptionsReader {
+export class WinUnityHubProjectsReader implements IUnityHubProjectsReader, IUnityProjectOptionsReader {
   async listProjects(): Promise<UnityProject[]> {
     let content: string;
     try {
@@ -142,7 +143,7 @@ export class MacUnityHubProjectsReader implements IUnityHubProjectsReader, IUnit
   }
 
   async readCliArgs(projectPath: string): Promise<readonly string[]> {
-    const infoPath = `${process.env.HOME ?? ''}/Library/Application Support/UnityHub/projectsInfo.json`;
+    const infoPath = join(HUB_DIR, 'projectsInfo.json');
 
     let content: string;
     try {
@@ -171,3 +172,5 @@ export class MacUnityHubProjectsReader implements IUnityHubProjectsReader, IUnit
     return tokens.map((token) => token.replace(/^['"]|['"]$/g, ''));
   }
 }
+
+

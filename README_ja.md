@@ -8,9 +8,12 @@ Unity Hubと同じ内容をInkベースのTUIで表示し、上下キー/`j`/`k`
 
 ## 必要環境
 
-- macOS
+- macOS または Windows 10/11
 - Node.js 20+
-- Unity Hub（`~/Library/Application Support/UnityHub/projects-v1.json`が存在すること）
+- Unity Hub
+  - macOS: `~/Library/Application Support/UnityHub/projects-v1.json`
+  - Windows: `%APPDATA%\\UnityHub\\projects-v1.json`
+  - WindowsのEditor既定パス: `C:\\Program Files\\Unity\\Hub\\Editor\\<version>\\Editor\\Unity.exe`
 
 ## 使い方
 
@@ -36,6 +39,14 @@ npx unity-hub-cli
 # または
 node dist/index.js
 ```
+
+Windowsでは PowerShell / CMD で動作します。Git Bash は ConPTY ベースのターミナル（Windows Terminal / VS Code・Cursor の統合ターミナル）内であれば動作します。スタンドアロンの Git Bash（MinTTY）では Raw mode が非対応のため、PowerShell / CMD / Windows Terminal をお使いください。どうしても Git Bash（MinTTY）を使う場合は、次のいずれかを利用できます：
+
+- `winpty cmd.exe /c npx unity-hub-cli`
+- `winpty powershell.exe -NoProfile -Command npx unity-hub-cli`
+- （ビルド済みの場合）`npm run build && winpty node dist/index.js`
+
+参考: `https://github.com/vadimdemedes/ink/#israwmodesupported`。
 
 利用可能な場合、デフォルトでGitリポジトリのルートフォルダ名を使って一覧を表示します。
 

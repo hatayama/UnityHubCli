@@ -8,9 +8,12 @@ A CLI tool that displays the same content as Unity Hub in an Ink-based TUI, allo
 
 ## Requirements
 
-- macOS
+- macOS or Windows 10/11
 - Node.js 20+
-- Unity Hub (with `~/Library/Application Support/UnityHub/projects-v1.json` present)
+- Unity Hub
+  - macOS: `~/Library/Application Support/UnityHub/projects-v1.json`
+  - Windows: `%APPDATA%\UnityHub\projects-v1.json`
+  - Windows Editor path (default): `C:\\Program Files\\Unity\\Hub\\Editor\\<version>\\Editor\\Unity.exe`
 
 ## Usage
 
@@ -36,6 +39,14 @@ npx unity-hub-cli
 # or
 node dist/index.js
 ```
+
+On Windows, it works from PowerShell and CMD. Git Bash is supported when running inside a ConPTY-based terminal (Windows Terminal or VS Code/Cursor integrated terminal). On standalone Git Bash (MinTTY), raw mode is not supported; use PowerShell/CMD/Windows Terminal. If you must use MinTTY Git Bash, run one of the following:
+
+- `winpty cmd.exe /c npx unity-hub-cli`
+- `winpty powershell.exe -NoProfile -Command npx unity-hub-cli`
+- If already built: `npm run build && winpty node dist/index.js`
+
+See `https://github.com/vadimdemedes/ink/#israwmodesupported`.
 
 By default, the project list uses the Git repository root folder name when available.
 
