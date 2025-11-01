@@ -7,7 +7,7 @@ import type { EditorVersion } from '../domain/models.js';
 
 const buildCandidateBases = (): readonly string[] => {
   const candidates: string[] = [];
-  const programFiles: string = process.env.PROGRAMFILES ?? 'C\\\\Program Files';
+  const programFiles: string = process.env.PROGRAMFILES ?? 'C:\\Program Files';
   const programW6432: string | undefined = process.env.ProgramW6432 ?? process.env.PROGRAMFILES;
   const localAppData: string | undefined = process.env.LOCALAPPDATA;
 

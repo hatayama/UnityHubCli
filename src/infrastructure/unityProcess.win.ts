@@ -115,15 +115,19 @@ export class WinUnityProcessReader implements IUnityProcessReader {
 
     let stdout: string;
     try {
-      const result = await execFileAsync('powershell.exe', [
-        '-NoProfile',
-        '-NonInteractive',
-        '-ExecutionPolicy',
-        'Bypass',
-        '-Command',
-        psCommand,
-      ]);
-      stdout = result.stdout.trim();
+      const result = await execFileAsync(
+        'powershell.exe',
+        [
+          '-NoProfile',
+          '-NonInteractive',
+          '-ExecutionPolicy',
+          'Bypass',
+          '-Command',
+          psCommand,
+        ],
+        { encoding: 'utf8' },
+      );
+      stdout = (result.stdout ?? '').trim();
     } catch (error) {
       throw new Error(`Failed to retrieve Unity process list: ${error instanceof Error ? error.message : String(error)}`);
     }
