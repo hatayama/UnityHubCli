@@ -87,4 +87,11 @@ const bootstrap = async (): Promise<void> => {
   }
 };
 
-await bootstrap();
+// Avoid top-level await to prevent Node's "unsettled top-level await" warning
+// Fire-and-forget with error capture via internal try/catch; extra catch as safety.
+void bootstrap().catch((error) => {
+  const message = error instanceof Error ? error.message : String(error);
+  // eslint-disable-next-line no-console
+  console.error(message);
+  process.exitCode = 1;
+});

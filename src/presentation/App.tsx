@@ -70,7 +70,6 @@ export const App: React.FC<AppProps> = ({
   const linesPerProject = (showBranch ? 1 : 0) + (showPath ? 1 : 0) + 2;
   const isAnyMenuOpen = isSortMenuOpen || isVisibilityMenuOpen;
   const panelHeight: number = isVisibilityMenuOpen ? visibilityPanelHeight : sortPanelHeight;
-  const visibleCount: number = useVisibleCount(stdout, linesPerProject, isAnyMenuOpen, panelHeight, minimumVisibleProjectCount);
   const [index, setIndex] = useState(0);
   const [hint, setHint] = useState<string>(defaultHintMessage);
   const [windowStart, setWindowStart] = useState(0);
@@ -80,6 +79,19 @@ export const App: React.FC<AppProps> = ({
   const [sortMenuIndex, setSortMenuIndex] = useState(0);
   const [directionManuallyChanged, setDirectionManuallyChanged] = useState<boolean>(false);
   const { sortPreferences, setSortPreferences } = useSortPreferences();
+
+  const columns: number | undefined = typeof stdout?.columns === 'number' ? stdout.columns : undefined;
+  const statusBarRows: number = isAnyMenuOpen
+    ? 1
+    : Math.max(1, typeof columns === 'number' && columns > 0 ? Math.ceil(hint.length / columns) : 1);
+  const visibleCount: number = useVisibleCount(
+    stdout,
+    linesPerProject,
+    isAnyMenuOpen,
+    panelHeight,
+    minimumVisibleProjectCount,
+    statusBarRows,
+  );
 
   const clearScreen = useCallback((): void => {
     stdout?.write('\x1B[2J\x1B[3J\x1B[H');

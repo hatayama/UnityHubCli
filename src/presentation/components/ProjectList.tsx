@@ -215,6 +215,7 @@ export const ProjectList: React.FC<ProjectListProps> = ({
             path: pathScrollbar,
             spacer: spacerScrollbar,
           }}
+          showSpacer={offset < visibleProjects.length - 1}
         />
       );
     });

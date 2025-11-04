@@ -22,6 +22,7 @@ type ProjectRowProps = {
   readonly showBranch: boolean;
   readonly showPath: boolean;
   readonly scrollbar: ScrollbarChars;
+  readonly showSpacer: boolean;
 };
 
 export const ProjectRow: React.FC<ProjectRowProps> = ({
@@ -38,6 +39,7 @@ export const ProjectRow: React.FC<ProjectRowProps> = ({
   showBranch,
   showPath,
   scrollbar,
+  showSpacer,
 }) => {
   const { stdout } = useStdout();
   const computedCenterWidth: number | undefined =
@@ -69,13 +71,13 @@ export const ProjectRow: React.FC<ProjectRowProps> = ({
         {showPath ? (
           <Text color="#719bd8" wrap="truncate">{pathLine}</Text>
         ) : null}
-        <Text> </Text>
+        {showSpacer ? <Text> </Text> : null}
       </Box>
       <Box marginLeft={1} width={1} flexDirection="column" alignItems="center">
         <Text>{scrollbar.title}</Text>
         {showBranch ? <Text>{scrollbar.branch}</Text> : null}
         {showPath ? <Text>{scrollbar.path}</Text> : null}
-        <Text>{scrollbar.spacer}</Text>
+        {showSpacer ? <Text>{scrollbar.spacer}</Text> : null}
       </Box>
     </Box>
   );
