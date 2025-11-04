@@ -1,3 +1,5 @@
+import { basename } from 'node:path';
+
 import { Box } from 'ink';
 import React, { useMemo } from 'react';
 
@@ -19,11 +21,8 @@ const extractRootFolder = (repository?: GitRepositoryInfo): string | undefined =
   if (!repository?.root) {
     return undefined;
   }
-  const segments = repository.root.split('/').filter((segment) => segment.length > 0);
-  if (segments.length === 0) {
-    return undefined;
-  }
-  return segments[segments.length - 1];
+  const base: string = basename(repository.root);
+  return base || undefined;
 };
 
 const formatProjectName = (
