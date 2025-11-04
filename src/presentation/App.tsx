@@ -78,6 +78,7 @@ export const App: React.FC<AppProps> = ({
   const [launchedProjects, setLaunchedProjects] = useState<ReadonlySet<string>>(new Set());
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [sortMenuIndex, setSortMenuIndex] = useState(0);
+  const [directionManuallyChanged, setDirectionManuallyChanged] = useState<boolean>(false);
   const { sortPreferences, setSortPreferences } = useSortPreferences();
 
   const clearScreen = useCallback((): void => {
@@ -463,10 +464,15 @@ export const App: React.FC<AppProps> = ({
 
       const toggleCurrent = (): void => {
         if (sortMenuIndex === 0) {
-          setSortPreferences((prev) => ({ ...prev, primary: prev.primary === 'updated' ? 'name' : 'updated' }));
+          setSortPreferences((prev) => {
+            const nextPrimary: SortPrimary = prev.primary === 'updated' ? 'name' : 'updated';
+            const nextDirection: SortDirection = nextPrimary === 'name' && !directionManuallyChanged ? 'asc' : prev.direction;
+            return { ...prev, primary: nextPrimary, direction: nextDirection };
+          });
           return;
         }
         if (sortMenuIndex === 1) {
+          setDirectionManuallyChanged(true);
           setSortPreferences((prev) => ({ ...prev, direction: prev.direction === 'asc' ? 'desc' : 'asc' }));
           return;
         }
