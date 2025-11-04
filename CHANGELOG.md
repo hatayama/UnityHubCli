@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.13.1](https://github.com/hatayama/UnityHubCli/compare/unity-hub-cli-v0.13.0...unity-hub-cli-v0.13.1) (2025-11-04)
+
+
+### Bug Fixes
+
+* height calculation when status bar wraps and improve UI ([#45](https://github.com/hatayama/UnityHubCli/issues/45)) ([4ad04f4](https://github.com/hatayama/UnityHubCli/commit/4ad04f4e923f8c2db16fac22f078c8c7f83c0a7f))
+
 ## [0.13.0](https://github.com/hatayama/UnityHubCli/compare/unity-hub-cli-v0.12.0...unity-hub-cli-v0.13.0) (2025-11-01)
 
 
