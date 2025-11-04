@@ -14,7 +14,7 @@ const LOCK_COLOR = 'yellow';
 const STATUS_LABELS: Record<LaunchStatus, string> = {
   idle: '',
   running: '[running]',
-  crashed: '[crash]',
+  crashed: '',
 };
 
 const extractRootFolder = (repository?: GitRepositoryInfo): string | undefined => {
@@ -192,7 +192,7 @@ export const ProjectList: React.FC<ProjectListProps> = ({
       const spacerScrollbar = scrollbarChars[baseScrollbarIndex + linesPerProject - 1] ?? ' ';
 
       const statusLabel: string = STATUS_LABELS[displayStatus];
-      const statusColor: string | undefined = displayStatus === 'running' ? LOCK_COLOR : displayStatus === 'crashed' ? 'red' : undefined;
+      const statusColor: string | undefined = displayStatus === 'running' ? LOCK_COLOR : undefined;
 
       return (
         <ProjectRow
