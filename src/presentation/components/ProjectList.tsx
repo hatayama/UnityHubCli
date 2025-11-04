@@ -139,7 +139,8 @@ export const ProjectList: React.FC<ProjectListProps> = ({
     }
 
     if (totalLines <= visibleLines) {
-      return Array.from({ length: visibleLines }, () => '█');
+      // No scrolling is needed; return spaces to visually hide the scrollbar
+      return Array.from({ length: visibleLines }, () => ' ');
     }
 
     const trackLength = visibleLines;
