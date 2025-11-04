@@ -1,3 +1,5 @@
+import { basename } from 'node:path';
+
 import { Box } from 'ink';
 import React, { useMemo } from 'react';
 
@@ -12,18 +14,15 @@ const LOCK_COLOR = 'yellow';
 const STATUS_LABELS: Record<LaunchStatus, string> = {
   idle: '',
   running: '[running]',
-  crashed: '[crash]',
+  crashed: '',
 };
 
 const extractRootFolder = (repository?: GitRepositoryInfo): string | undefined => {
   if (!repository?.root) {
     return undefined;
   }
-  const segments = repository.root.split('/').filter((segment) => segment.length > 0);
-  if (segments.length === 0) {
-    return undefined;
-  }
-  return segments[segments.length - 1];
+  const base: string = basename(repository.root);
+  return base || undefined;
 };
 
 const formatProjectName = (
@@ -140,7 +139,8 @@ export const ProjectList: React.FC<ProjectListProps> = ({
     }
 
     if (totalLines <= visibleLines) {
-      return Array.from({ length: visibleLines }, () => '█');
+      // No scrolling is needed; return spaces to visually hide the scrollbar
+      return Array.from({ length: visibleLines }, () => ' ');
     }
 
     const trackLength = visibleLines;
@@ -192,7 +192,7 @@ export const ProjectList: React.FC<ProjectListProps> = ({
       const spacerScrollbar = scrollbarChars[baseScrollbarIndex + linesPerProject - 1] ?? ' ';
 
       const statusLabel: string = STATUS_LABELS[displayStatus];
-      const statusColor: string | undefined = displayStatus === 'running' ? LOCK_COLOR : displayStatus === 'crashed' ? 'red' : undefined;
+      const statusColor: string | undefined = displayStatus === 'running' ? LOCK_COLOR : undefined;
 
       return (
         <ProjectRow
@@ -215,6 +215,7 @@ export const ProjectList: React.FC<ProjectListProps> = ({
             path: pathScrollbar,
             spacer: spacerScrollbar,
           }}
+          showSpacer={offset < visibleProjects.length - 1}
         />
       );
     });

@@ -1,3 +1,5 @@
+import { basename } from 'node:path';
+
 import clipboard from 'clipboardy';
 import { Box, Text, useApp, useInput, useStdout } from 'ink';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
@@ -22,19 +24,14 @@ const extractRootFolder = (repository?: GitRepositoryInfo): string | undefined =
   if (!repository?.root) {
     return undefined;
   }
-
-  const segments = repository.root.split('/').filter((segment) => segment.length > 0);
-  if (segments.length === 0) {
-    return undefined;
-  }
-
-  return segments[segments.length - 1];
+  const base: string = basename(repository.root);
+  return base || undefined;
 };
 
 
 const minimumVisibleProjectCount: number = 4;
 const defaultHintMessage =
-  'Select: j/k · Open: o · Quit: q · Refresh: r · CopyPath: c · Sort: s · Visibility: v · Close: ctrl + c';
+  'j/k Select · [o]pen [q]uit [r]efresh [c]opy [s]ort [v]isibility · ^C Exit';
  
 
  
@@ -73,7 +70,6 @@ export const App: React.FC<AppProps> = ({
   const linesPerProject = (showBranch ? 1 : 0) + (showPath ? 1 : 0) + 2;
   const isAnyMenuOpen = isSortMenuOpen || isVisibilityMenuOpen;
   const panelHeight: number = isVisibilityMenuOpen ? visibilityPanelHeight : sortPanelHeight;
-  const visibleCount: number = useVisibleCount(stdout, linesPerProject, isAnyMenuOpen, panelHeight, minimumVisibleProjectCount);
   const [index, setIndex] = useState(0);
   const [hint, setHint] = useState<string>(defaultHintMessage);
   const [windowStart, setWindowStart] = useState(0);
@@ -81,7 +77,21 @@ export const App: React.FC<AppProps> = ({
   const [launchedProjects, setLaunchedProjects] = useState<ReadonlySet<string>>(new Set());
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [sortMenuIndex, setSortMenuIndex] = useState(0);
+  const [directionManuallyChanged, setDirectionManuallyChanged] = useState<boolean>(false);
   const { sortPreferences, setSortPreferences } = useSortPreferences();
+
+  const columns: number | undefined = typeof stdout?.columns === 'number' ? stdout.columns : undefined;
+  const statusBarRows: number = isAnyMenuOpen
+    ? 1
+    : Math.max(1, typeof columns === 'number' && columns > 0 ? Math.ceil(hint.length / columns) : 1);
+  const visibleCount: number = useVisibleCount(
+    stdout,
+    linesPerProject,
+    isAnyMenuOpen,
+    panelHeight,
+    minimumVisibleProjectCount,
+    statusBarRows,
+  );
 
   const clearScreen = useCallback((): void => {
     stdout?.write('\x1B[2J\x1B[3J\x1B[H');
@@ -466,10 +476,15 @@ export const App: React.FC<AppProps> = ({
 
       const toggleCurrent = (): void => {
         if (sortMenuIndex === 0) {
-          setSortPreferences((prev) => ({ ...prev, primary: prev.primary === 'updated' ? 'name' : 'updated' }));
+          setSortPreferences((prev) => {
+            const nextPrimary: SortPrimary = prev.primary === 'updated' ? 'name' : 'updated';
+            const nextDirection: SortDirection = nextPrimary === 'name' && !directionManuallyChanged ? 'asc' : prev.direction;
+            return { ...prev, primary: nextPrimary, direction: nextDirection };
+          });
           return;
         }
         if (sortMenuIndex === 1) {
+          setDirectionManuallyChanged(true);
           setSortPreferences((prev) => ({ ...prev, direction: prev.direction === 'asc' ? 'desc' : 'asc' }));
           return;
         }
@@ -648,7 +663,7 @@ export const App: React.FC<AppProps> = ({
         isAnyMenuOpen ? (
           <Text wrap="truncate">Select: j/k, Toggle: Space, Back: Esc</Text>
         ) : (
-          <Text wrap="truncate">{hint}</Text>
+          <Text wrap="wrap">{hint}</Text>
         )
       }
     />
