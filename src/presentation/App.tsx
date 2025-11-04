@@ -31,7 +31,7 @@ const extractRootFolder = (repository?: GitRepositoryInfo): string | undefined =
 
 const minimumVisibleProjectCount: number = 4;
 const defaultHintMessage =
-  'Select: j/k · Open: o · Quit: q · Refresh: r · CopyPath: c · Sort: s · Visibility: v · Close: ctrl + c';
+  'j/k Select · [o]pen [q]uit [r]efresh [c]opy [s]ort [v]isibility · ^C Exit';
  
 
  
@@ -645,7 +645,7 @@ export const App: React.FC<AppProps> = ({
         isAnyMenuOpen ? (
           <Text wrap="truncate">Select: j/k, Toggle: Space, Back: Esc</Text>
         ) : (
-          <Text wrap="truncate">{hint}</Text>
+          <Text wrap="wrap">{hint}</Text>
         )
       }
     />
