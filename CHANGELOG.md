@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.13.2](https://github.com/hatayama/UnityHubCli/compare/unity-hub-cli-v0.13.1...unity-hub-cli-v0.13.2) (2025-11-13)
+
+
+### Bug Fixes
+
+* ignore Unity worker processes when focusing existing editor ([#47](https://github.com/hatayama/UnityHubCli/issues/47)) ([e1d414f](https://github.com/hatayama/UnityHubCli/commit/e1d414f2215918c352329cb5a7944435e3d144cc))
+
 ## [0.13.1](https://github.com/hatayama/UnityHubCli/compare/unity-hub-cli-v0.13.0...unity-hub-cli-v0.13.1) (2025-11-04)
 
 
