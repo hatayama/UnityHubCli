@@ -66,6 +66,14 @@ const isUnityMainProcess = (command: string): boolean => {
   return UNITY_EXECUTABLE_PATTERN.test(command);
 };
 
+const isUnityAuxiliaryProcess = (command: string): boolean => {
+  const normalized = command.toLowerCase();
+  if (normalized.includes('-batchmode')) {
+    return true;
+  }
+  return normalized.includes('assetimportworker');
+};
+
 const isProcessMissingError = (error: unknown): boolean => {
   if (typeof error !== 'object' || error === null) {
     return false;
@@ -120,6 +128,9 @@ export class MacUnityProcessReader implements IUnityProcessReader {
 
         const command = match[2] ?? '';
         if (!isUnityMainProcess(command)) {
+          return undefined;
+        }
+        if (isUnityAuxiliaryProcess(command)) {
           return undefined;
         }
 
