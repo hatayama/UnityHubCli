@@ -1,12 +1,15 @@
 import process from 'node:process';
 
 import { render } from 'ink';
+import React from 'react';
 
 import { LaunchProjectUseCase, ListProjectsUseCase, TerminateProjectUseCase } from './application/usecases.js';
 import { MacEditorPathResolver } from './infrastructure/editor.js';
 import { WinEditorPathResolver } from './infrastructure/editor.win.js';
 import { GitRepositoryInfoReader } from './infrastructure/git.js';
 import { NodeProcessLauncher } from './infrastructure/process.js';
+import type { TerminalTheme } from './infrastructure/terminalTheme.js';
+import { detectTerminalTheme } from './infrastructure/terminalTheme.js';
 import { MacUnityHubProjectsReader } from './infrastructure/unityhub.js';
 import { WinUnityHubProjectsReader } from './infrastructure/unityhub.win.js';
 import { UnityLockChecker, UnityLockStatusReader } from './infrastructure/unityLock.js';
@@ -14,6 +17,7 @@ import { MacUnityProcessReader, MacUnityProcessTerminator } from './infrastructu
 import { WinUnityProcessReader, WinUnityProcessTerminator } from './infrastructure/unityProcess.win.js';
 import { UnityTempDirectoryCleaner } from './infrastructure/unityTemp.js';
 import { App } from './presentation/App.js';
+import { ThemeProvider } from './presentation/theme.js';
 
 const bootstrap = async (): Promise<void> => {
   const isWindows = process.platform === 'win32';
@@ -67,15 +71,20 @@ const bootstrap = async (): Promise<void> => {
       return;
     }
 
+    // ターミナルの背景色を検出してテーマを決定
+    const theme: TerminalTheme = await detectTerminalTheme();
+
     const projects = await listProjectsUseCase.execute();
     const { waitUntilExit } = render(
-      <App
-        projects={projects}
-        onLaunch={(project) => launchProjectUseCase.execute(project)}
-        onTerminate={(project) => terminateProjectUseCase.execute(project)}
-        onRefresh={() => listProjectsUseCase.execute()}
-        useGitRootName={useGitRootName}
-      />,
+      <ThemeProvider theme={theme}>
+        <App
+          projects={projects}
+          onLaunch={(project) => launchProjectUseCase.execute(project)}
+          onTerminate={(project) => terminateProjectUseCase.execute(project)}
+          onRefresh={() => listProjectsUseCase.execute()}
+          useGitRootName={useGitRootName}
+        />
+      </ThemeProvider>,
     );
     await waitUntilExit();
     process.stdout.write('\x1B[2J\x1B[3J\x1B[H');

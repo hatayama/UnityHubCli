@@ -5,12 +5,10 @@ import React, { useMemo } from 'react';
 
 import type { LaunchStatus, ProjectView } from '../../application/usecases.js';
 import type { GitBranch, GitRepositoryInfo } from '../../domain/models.js';
+import { useThemeColors } from '../theme.js';
 import { shortenHomePath } from '../utils/path.js';
 
 import { ProjectRow } from './ProjectRow.js';
-
-const PROJECT_COLOR = '#abd8e7';
-const LOCK_COLOR = 'yellow';
 const STATUS_LABELS: Record<LaunchStatus, string> = {
   idle: '',
   running: '[running]',
@@ -129,6 +127,7 @@ export const ProjectList: React.FC<ProjectListProps> = ({
   launchedProjects,
   totalProjects,
 }) => {
+  const colors = useThemeColors();
   const scrollbarChars = useMemo(() => {
     const totalLines = totalProjects * linesPerProject;
     const windowProjects = visibleProjects.length;
@@ -192,7 +191,7 @@ export const ProjectList: React.FC<ProjectListProps> = ({
       const spacerScrollbar = scrollbarChars[baseScrollbarIndex + linesPerProject - 1] ?? ' ';
 
       const statusLabel: string = STATUS_LABELS[displayStatus];
-      const statusColor: string | undefined = displayStatus === 'running' ? LOCK_COLOR : undefined;
+      const statusColor: string | undefined = displayStatus === 'running' ? colors.status : undefined;
 
       return (
         <ProjectRow
@@ -200,7 +199,7 @@ export const ProjectList: React.FC<ProjectListProps> = ({
           isSelected={isSelected}
           selectionBar={selectionBar}
           projectName={projectName}
-          projectColor={PROJECT_COLOR}
+          projectColor={colors.projectName}
           versionLabel={versionLabel}
           updatedText={updatedText}
           statusLabel={statusLabel}
