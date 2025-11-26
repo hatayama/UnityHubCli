@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.14.0](https://github.com/hatayama/UnityHubCli/compare/unity-hub-cli-v0.13.2...unity-hub-cli-v0.14.0) (2025-11-26)
+
+
+### Features
+
+* auto-detect terminal background color and apply dynamic theme ([#49](https://github.com/hatayama/UnityHubCli/issues/49)) ([4496d0c](https://github.com/hatayama/UnityHubCli/commit/4496d0c16ece90b0c362d5059459b6843719f3f3))
+
 ## [0.13.2](https://github.com/hatayama/UnityHubCli/compare/unity-hub-cli-v0.13.1...unity-hub-cli-v0.13.2) (2025-11-13)
 
 
