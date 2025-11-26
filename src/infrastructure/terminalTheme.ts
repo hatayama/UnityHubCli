@@ -108,22 +108,8 @@ const queryTerminalBackgroundColor = async (timeoutMs: number): Promise<RgbColor
       escapeCodeTimeout: timeoutMs,
     });
 
-    const cleanup = (timerId: ReturnType<typeof setTimeout>): void => {
-      clearTimeout(timerId);
-      rl.close();
-      // rawモードを解除
-      if (process.stdin.isTTY && process.stdin.isRaw) {
-        process.stdin.setRawMode(false);
-      }
-    };
-
-    const timeoutId: ReturnType<typeof setTimeout> = setTimeout(() => {
-      if (!resolved) {
-        resolved = true;
-        cleanup(timeoutId);
-        resolve(undefined);
-      }
-    }, timeoutMs);
+    // eslint-disable-next-line prefer-const -- assigned after onData/cleanup definitions
+    let timeoutId: ReturnType<typeof setTimeout>;
 
     const onData = (chunk: Buffer): void => {
       responseBuffer += chunk.toString();
@@ -134,11 +120,29 @@ const queryTerminalBackgroundColor = async (timeoutMs: number): Promise<RgbColor
         if (!resolved) {
           resolved = true;
           const color = parseOsc11Response(responseBuffer);
-          cleanup(timeoutId);
+          cleanup();
           resolve(color);
         }
       }
     };
+
+    const cleanup = (): void => {
+      clearTimeout(timeoutId);
+      rl.close();
+      process.stdin.off('data', onData);
+      // rawモードを解除
+      if (process.stdin.isTTY && process.stdin.isRaw) {
+        process.stdin.setRawMode(false);
+      }
+    };
+
+    timeoutId = setTimeout(() => {
+      if (!resolved) {
+        resolved = true;
+        cleanup();
+        resolve(undefined);
+      }
+    }, timeoutMs);
 
     process.stdin.on('data', onData);
 
