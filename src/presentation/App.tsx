@@ -4,7 +4,7 @@ import clipboard from 'clipboardy';
 import { Box, Text, useApp, useInput, useStdout } from 'ink';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 
-import type { ProjectView } from '../application/usecases.js';
+import type { LaunchWithEditorResult, ProjectView } from '../application/usecases.js';
 import { LaunchCancelledError } from '../application/usecases.js';
 import type { GitRepositoryInfo, UnityProject } from '../domain/models.js';
 import type { SortDirection, SortPrimary } from '../infrastructure/config.js';
@@ -32,7 +32,7 @@ const extractRootFolder = (repository?: GitRepositoryInfo): string | undefined =
 
 const minimumVisibleProjectCount: number = 4;
 const defaultHintMessage =
-  'j/k Select · [o]pen [q]uit [r]efresh [c]opy [s]ort [v]isibility · ^C Exit';
+  'j/k Select · [o]pen [O]pen+Editor [q]uit [r]efresh [c]opy [s]ort [v]isibility · ^C Exit';
  
 
  
@@ -46,6 +46,7 @@ const getCopyTargetPath = (view: ProjectView): string => {
 type AppProps = {
   readonly projects: readonly ProjectView[];
   readonly onLaunch: (project: UnityProject) => Promise<void>;
+  readonly onLaunchWithEditor?: (project: UnityProject) => Promise<LaunchWithEditorResult>;
   readonly onTerminate: (project: UnityProject) => Promise<TerminateResult>;
   readonly onRefresh?: () => Promise<ProjectView[]>;
   readonly useGitRootName?: boolean;
@@ -54,6 +55,7 @@ type AppProps = {
 export const App: React.FC<AppProps> = ({
   projects,
   onLaunch,
+  onLaunchWithEditor,
   onTerminate,
   onRefresh,
   useGitRootName = true,
@@ -339,6 +341,74 @@ export const App: React.FC<AppProps> = ({
     }
   }, [index, onLaunch, sortedProjects]);
 
+  const launchSelectedWithEditor = useCallback(async () => {
+    if (!onLaunchWithEditor) {
+      setHint('Launch with editor not available');
+      setTimeout(() => {
+        setHint(defaultHintMessage);
+      }, 2000);
+      return;
+    }
+
+    const projectView = sortedProjects[index];
+    if (!projectView) {
+      setHint('No project to launch');
+      setTimeout(() => {
+        setHint(defaultHintMessage);
+      }, 2000);
+      return;
+    }
+
+    const { project } = projectView;
+    try {
+      const cdTarget = getCopyTargetPath(projectView);
+      const command = buildCdCommand(cdTarget);
+      clipboard.writeSync(command);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      setHint(`Failed to copy: ${message}`);
+      setTimeout(() => {
+        setHint(defaultHintMessage);
+      }, 3000);
+      return;
+    }
+
+    try {
+      const result = await onLaunchWithEditor(project);
+      setLaunchedProjects((previous) => {
+        const next = new Set(previous);
+        next.add(project.id);
+        return next;
+      });
+      setReleasedProjects((previous) => {
+        if (!previous.has(project.id)) {
+          return previous;
+        }
+        const next = new Set(previous);
+        next.delete(project.id);
+        return next;
+      });
+      setHint(result.message);
+      setTimeout(() => {
+        setHint(defaultHintMessage);
+      }, 3000);
+    } catch (error) {
+      if (error instanceof LaunchCancelledError) {
+        setHint('Launch cancelled');
+        setTimeout(() => {
+          setHint(defaultHintMessage);
+        }, 3000);
+        return;
+      }
+
+      const message = error instanceof Error ? error.message : String(error);
+      setHint(`Failed to launch: ${message}`);
+      setTimeout(() => {
+        setHint(defaultHintMessage);
+      }, 3000);
+    }
+  }, [index, onLaunchWithEditor, sortedProjects]);
+
   const terminateSelected = useCallback(async () => {
     const projectView = sortedProjects[index];
     if (!projectView) {
@@ -568,6 +638,11 @@ export const App: React.FC<AppProps> = ({
 
     if (input === 'o') {
       void launchSelected();
+      return;
+    }
+
+    if (input === 'O') {
+      void launchSelectedWithEditor();
       return;
     }
 

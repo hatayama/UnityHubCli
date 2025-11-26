@@ -42,3 +42,16 @@ export interface IUnityProcessReader {
 export interface IUnityTempDirectoryCleaner {
   clean(projectPath: string): Promise<void>;
 }
+
+export type ExternalEditorResult =
+  | { readonly status: 'found'; readonly path: string; readonly name: string }
+  | { readonly status: 'not_configured' }
+  | { readonly status: 'not_found'; readonly configuredPath: string };
+
+export interface IExternalEditorPathReader {
+  read(): Promise<ExternalEditorResult>;
+}
+
+export interface IExternalEditorLauncher {
+  launch(editorPath: string, projectRoot: string): Promise<void>;
+}
