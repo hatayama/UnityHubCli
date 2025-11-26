@@ -1,12 +1,15 @@
 import process from 'node:process';
 
 import { render } from 'ink';
+import React from 'react';
 
 import { LaunchProjectUseCase, ListProjectsUseCase, TerminateProjectUseCase } from './application/usecases.js';
 import { MacEditorPathResolver } from './infrastructure/editor.js';
 import { WinEditorPathResolver } from './infrastructure/editor.win.js';
 import { GitRepositoryInfoReader } from './infrastructure/git.js';
 import { NodeProcessLauncher } from './infrastructure/process.js';
+import type { TerminalTheme } from './infrastructure/terminalTheme.js';
+import { detectTerminalTheme } from './infrastructure/terminalTheme.js';
 import { MacUnityHubProjectsReader } from './infrastructure/unityhub.js';
 import { WinUnityHubProjectsReader } from './infrastructure/unityhub.win.js';
 import { UnityLockChecker, UnityLockStatusReader } from './infrastructure/unityLock.js';
@@ -14,6 +17,7 @@ import { MacUnityProcessReader, MacUnityProcessTerminator } from './infrastructu
 import { WinUnityProcessReader, WinUnityProcessTerminator } from './infrastructure/unityProcess.win.js';
 import { UnityTempDirectoryCleaner } from './infrastructure/unityTemp.js';
 import { App } from './presentation/App.js';
+import { ThemeProvider } from './presentation/theme.js';
 
 const bootstrap = async (): Promise<void> => {
   const isWindows = process.platform === 'win32';
@@ -53,13 +57,13 @@ const bootstrap = async (): Promise<void> => {
     );
     if (!rawModeSupported) {
       const message = [
-        'この端末では対話入力（Raw mode）が使えません。',
-        'PowerShell / cmd.exe で実行するか、ConPTY ベースのターミナル（Windows Terminal, VS Code/Cursor の統合ターミナル）で Git Bash を使用してください。',
-        'MinTTY の Git Bash では次のいずれかを使用してください:',
+        'Interactive input (Raw mode) is not available in this terminal.',
+        'Please run in PowerShell / cmd.exe, or use Git Bash in a ConPTY-based terminal (Windows Terminal, VS Code/Cursor integrated terminal).',
+        'For MinTTY Git Bash, use one of the following:',
         ' - winpty cmd.exe /c npx unity-hub-cli',
         ' - winpty powershell.exe -NoProfile -Command npx unity-hub-cli',
-        '（ビルド済みの場合）npm run build && winpty node dist/index.js',
-        '詳しく: https://github.com/vadimdemedes/ink/#israwmodesupported',
+        '(If already built) npm run build && winpty node dist/index.js',
+        'Details: https://github.com/vadimdemedes/ink/#israwmodesupported',
       ].join('\n');
       // eslint-disable-next-line no-console
       console.error(message);
@@ -67,15 +71,20 @@ const bootstrap = async (): Promise<void> => {
       return;
     }
 
+    // Detect terminal background color to determine theme
+    const theme: TerminalTheme = await detectTerminalTheme();
+
     const projects = await listProjectsUseCase.execute();
     const { waitUntilExit } = render(
-      <App
-        projects={projects}
-        onLaunch={(project) => launchProjectUseCase.execute(project)}
-        onTerminate={(project) => terminateProjectUseCase.execute(project)}
-        onRefresh={() => listProjectsUseCase.execute()}
-        useGitRootName={useGitRootName}
-      />,
+      <ThemeProvider theme={theme}>
+        <App
+          projects={projects}
+          onLaunch={(project) => launchProjectUseCase.execute(project)}
+          onTerminate={(project) => terminateProjectUseCase.execute(project)}
+          onRefresh={() => listProjectsUseCase.execute()}
+          useGitRootName={useGitRootName}
+        />
+      </ThemeProvider>,
     );
     await waitUntilExit();
     process.stdout.write('\x1B[2J\x1B[3J\x1B[H');

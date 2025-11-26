@@ -1,6 +1,8 @@
 import { Box, Text, useStdout } from 'ink';
 import React from 'react';
 
+import { useThemeColors } from '../theme.js';
+
 type ScrollbarChars = {
   readonly title: string;
   readonly branch: string;
@@ -42,6 +44,7 @@ export const ProjectRow: React.FC<ProjectRowProps> = ({
   showSpacer,
 }) => {
   const { stdout } = useStdout();
+  const colors = useThemeColors();
   const computedCenterWidth: number | undefined =
     typeof stdout?.columns === 'number' ? Math.max(0, stdout.columns - 6) : undefined;
   const centerWidth: number | undefined =
@@ -52,9 +55,9 @@ export const ProjectRow: React.FC<ProjectRowProps> = ({
     <Box flexDirection="row">
       {/* left selection indicator */}
       <Box width={1} flexDirection="column" alignItems="center" marginLeft={0}>
-        <Text color={isSelected ? 'green' : undefined}>{selectionBar}</Text>
-        {showBranch ? <Text color={isSelected ? 'green' : undefined}>{selectionBar}</Text> : null}
-        {showPath ? <Text color={isSelected ? 'green' : undefined}>{selectionBar}</Text> : null}
+        <Text color={isSelected ? colors.focus : undefined}>{selectionBar}</Text>
+        {showBranch ? <Text color={isSelected ? colors.focus : undefined}>{selectionBar}</Text> : null}
+        {showPath ? <Text color={isSelected ? colors.focus : undefined}>{selectionBar}</Text> : null}
       </Box>
       <Box flexDirection="column" marginLeft={isSelected ? 2 : 1} width={centerWidth}>
         <Text wrap="truncate">
@@ -66,10 +69,10 @@ export const ProjectRow: React.FC<ProjectRowProps> = ({
           {statusLabel && statusColor ? <Text color={statusColor}>{`  ${statusLabel}`}</Text> : null}
         </Text>
         {showBranch ? (
-          <Text color="#e3839c" wrap="truncate">{branchLine}</Text>
+          <Text color={colors.branch} wrap="truncate">{branchLine}</Text>
         ) : null}
         {showPath ? (
-          <Text color="#719bd8" wrap="truncate">{pathLine}</Text>
+          <Text color={colors.path} wrap="truncate">{pathLine}</Text>
         ) : null}
         {showSpacer ? <Text> </Text> : null}
       </Box>

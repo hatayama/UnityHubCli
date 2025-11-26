@@ -2,6 +2,7 @@ import { Box, Text } from 'ink';
 import React from 'react';
 
 import type { SortPreferences } from '../../infrastructure/config.js';
+import { useThemeColors } from '../theme.js';
 
 type SortPanelProps = {
   readonly sortPreferences: SortPreferences;
@@ -28,12 +29,13 @@ export const SortPanel: React.FC<SortPanelProps> = ({ sortPreferences, focusedIn
   const primaryLine = lineForPrimary(sortPreferences.primary);
   const directionLine = lineForDirection(sortPreferences);
   const favoritesLine = lineForFavorites(sortPreferences.favoritesFirst);
+  const colors = useThemeColors();
 
   const Item: React.FC<{ label: string; selected: boolean }> = ({ label, selected }) => {
     const prefix = selected ? '> ' : '  ';
     return (
       <Text>
-        {selected ? <Text color="green">{prefix}</Text> : prefix}
+        {selected ? <Text color={colors.focus}>{prefix}</Text> : prefix}
         {label}
       </Text>
     );
@@ -43,7 +45,7 @@ export const SortPanel: React.FC<SortPanelProps> = ({ sortPreferences, focusedIn
     <Box
       flexDirection="column"
       borderStyle="round"
-      borderColor="green"
+      borderColor={colors.border}
       paddingX={1}
       width={width}
     >

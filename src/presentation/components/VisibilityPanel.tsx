@@ -2,6 +2,7 @@ import { Box, Text } from 'ink';
 import React from 'react';
 
 import type { VisibilityPreferences } from '../../infrastructure/config.js';
+import { useThemeColors } from '../theme.js';
 
 type VisibilityPanelProps = {
   readonly visibility: VisibilityPreferences;
@@ -15,12 +16,13 @@ const lineForPath = (on: boolean): string => `Show path: ${on ? 'ON' : 'OFF'}`;
 export const VisibilityPanel: React.FC<VisibilityPanelProps> = ({ visibility, focusedIndex, width }) => {
   const branchLine = lineForBranch(visibility.showBranch);
   const pathLine = lineForPath(visibility.showPath);
+  const colors = useThemeColors();
 
   const Item: React.FC<{ label: string; selected: boolean }> = ({ label, selected }) => {
     const prefix = selected ? '> ' : '  ';
     return (
       <Text>
-        {selected ? <Text color="green">{prefix}</Text> : prefix}
+        {selected ? <Text color={colors.focus}>{prefix}</Text> : prefix}
         {label}
       </Text>
     );
@@ -30,7 +32,7 @@ export const VisibilityPanel: React.FC<VisibilityPanelProps> = ({ visibility, fo
     <Box
       flexDirection="column"
       borderStyle="round"
-      borderColor="green"
+      borderColor={colors.border}
       paddingX={1}
       width={width}
     >

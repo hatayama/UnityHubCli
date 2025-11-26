@@ -16,6 +16,7 @@ import { VisibilityPanel } from './components/VisibilityPanel.js';
 import { useSortPreferences } from './hooks/useSortPreferences.js';
 import { useVisibilityPreferences } from './hooks/useVisibilityPreferences.js';
 import { useVisibleCount } from './hooks/useVisibleCount.js';
+import { useThemeColors } from './theme.js';
 import { shortenHomePath, buildCdCommand } from './utils/path.js';
 
 type TerminateResult = { readonly terminated: boolean; readonly message?: string };
@@ -59,6 +60,7 @@ export const App: React.FC<AppProps> = ({
 }) => {
   const { exit } = useApp();
   const { stdout } = useStdout();
+  const colors = useThemeColors();
   const [projectViews, setProjectViews] = useState<readonly ProjectView[]>(projects);
   const [isSortMenuOpen, setIsSortMenuOpen] = useState(false);
   const [isVisibilityMenuOpen, setIsVisibilityMenuOpen] = useState(false);
@@ -610,7 +612,7 @@ export const App: React.FC<AppProps> = ({
         <Box
           flexDirection="column"
           borderStyle="round"
-          borderColor="green"
+          borderColor={colors.border}
           width={typeof stdout?.columns === 'number' ? stdout.columns : undefined}
         >
           {sortedProjects.length === 0 ? (
