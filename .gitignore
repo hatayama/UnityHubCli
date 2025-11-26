@@ -13,3 +13,4 @@ pnpm-debug.log*
 .vscode/
 .serena/memories
 .cursor/plans*
+.claude/settings.local.json
