@@ -57,13 +57,13 @@ const bootstrap = async (): Promise<void> => {
     );
     if (!rawModeSupported) {
       const message = [
-        'この端末では対話入力（Raw mode）が使えません。',
-        'PowerShell / cmd.exe で実行するか、ConPTY ベースのターミナル（Windows Terminal, VS Code/Cursor の統合ターミナル）で Git Bash を使用してください。',
-        'MinTTY の Git Bash では次のいずれかを使用してください:',
+        'Interactive input (Raw mode) is not available in this terminal.',
+        'Please run in PowerShell / cmd.exe, or use Git Bash in a ConPTY-based terminal (Windows Terminal, VS Code/Cursor integrated terminal).',
+        'For MinTTY Git Bash, use one of the following:',
         ' - winpty cmd.exe /c npx unity-hub-cli',
         ' - winpty powershell.exe -NoProfile -Command npx unity-hub-cli',
-        '（ビルド済みの場合）npm run build && winpty node dist/index.js',
-        '詳しく: https://github.com/vadimdemedes/ink/#israwmodesupported',
+        '(If already built) npm run build && winpty node dist/index.js',
+        'Details: https://github.com/vadimdemedes/ink/#israwmodesupported',
       ].join('\n');
       // eslint-disable-next-line no-console
       console.error(message);
@@ -71,7 +71,7 @@ const bootstrap = async (): Promise<void> => {
       return;
     }
 
-    // ターミナルの背景色を検出してテーマを決定
+    // Detect terminal background color to determine theme
     const theme: TerminalTheme = await detectTerminalTheme();
 
     const projects = await listProjectsUseCase.execute();

@@ -4,60 +4,60 @@ import { createContext, createElement, useContext } from 'react';
 import type { TerminalTheme } from '../infrastructure/terminalTheme.js';
 
 /**
- * カラーパレットの型定義
+ * Color palette type definition
  */
 export type ColorPalette = {
-  /** プロジェクト名の色 */
+  /** Color for project name */
   readonly projectName: string;
-  /** ブランチ行の色 */
+  /** Color for branch line */
   readonly branch: string;
-  /** パス行の色 */
+  /** Color for path line */
   readonly path: string;
-  /** 枠線・選択インジケータの色 */
+  /** Color for border and selection indicator */
   readonly border: string;
-  /** ステータス（running）表示の色 */
+  /** Color for status (running) display */
   readonly status: string;
-  /** フォーカス状態の色 */
+  /** Color for focus state */
   readonly focus: string;
 };
 
 /**
- * ダークテーマ用カラーパレット
- * 黒背景に対してコントラストの高い明るい色を使用
+ * Dark theme color palette
+ * Uses bright colors with high contrast against dark backgrounds
  */
 const darkPalette: ColorPalette = {
-  projectName: '#abd8e7', // 明るいシアン
-  branch: '#e3839c', // ピンク
-  path: '#719bd8', // 青
-  border: 'green', // グリーン
-  status: 'yellow', // 黄色
-  focus: 'green', // グリーン
+  projectName: '#abd8e7', // Light cyan
+  branch: '#e3839c', // Pink
+  path: '#719bd8', // Blue
+  border: 'green', // Green
+  status: 'yellow', // Yellow
+  focus: 'green', // Green
 };
 
 /**
- * ライトテーマ用カラーパレット
- * 白背景に対してコントラストの高い暗い色を使用
+ * Light theme color palette
+ * Uses dark colors with high contrast against light backgrounds
  */
 const lightPalette: ColorPalette = {
-  projectName: '#0044aa', // より濃い青
-  branch: '#991144', // より濃いマゼンタ
-  path: '#1a4570', // より濃い青
-  border: '#006400', // ダークグリーン
-  status: '#cc6600', // 濃いオレンジ（より目立つ）
-  focus: '#006400', // ダークグリーン
+  projectName: '#0044aa', // Deep blue
+  branch: '#991144', // Deep magenta
+  path: '#1a4570', // Deep blue
+  border: '#006400', // Dark green
+  status: '#cc6600', // Dark orange (more visible)
+  focus: '#006400', // Dark green
 };
 
 /**
- * テーマに応じたカラーパレットを取得する
- * @param theme ターミナルテーマ
- * @returns 対応するカラーパレット
+ * Get color palette based on theme
+ * @param theme Terminal theme
+ * @returns Corresponding color palette
  */
 export const getColorPalette = (theme: TerminalTheme): ColorPalette => {
   return theme === 'dark' ? darkPalette : lightPalette;
 };
 
 /**
- * テーマContextの型
+ * Theme context value type
  */
 type ThemeContextValue = {
   readonly theme: TerminalTheme;
@@ -65,7 +65,7 @@ type ThemeContextValue = {
 };
 
 /**
- * デフォルト値（ダークテーマ）
+ * Default value (dark theme)
  */
 const defaultThemeContext: ThemeContextValue = {
   theme: 'dark',
@@ -73,13 +73,13 @@ const defaultThemeContext: ThemeContextValue = {
 };
 
 /**
- * テーマContext
+ * Theme context
  */
 export const ThemeContext: Context<ThemeContextValue> = createContext<ThemeContextValue>(defaultThemeContext);
 
 /**
- * テーマContextからカラーパレットを取得するカスタムフック
- * @returns 現在のテーマに対応するカラーパレット
+ * Custom hook to get color palette from theme context
+ * @returns Color palette for current theme
  */
 export const useThemeColors = (): ColorPalette => {
   const context = useContext(ThemeContext);
@@ -87,8 +87,8 @@ export const useThemeColors = (): ColorPalette => {
 };
 
 /**
- * テーマContextからテーマ種別を取得するカスタムフック
- * @returns 現在のテーマ種別
+ * Custom hook to get theme type from theme context
+ * @returns Current theme type
  */
 export const useTheme = (): TerminalTheme => {
   const context = useContext(ThemeContext);
@@ -96,7 +96,7 @@ export const useTheme = (): TerminalTheme => {
 };
 
 /**
- * ThemeProviderのprops型
+ * ThemeProvider props type
  */
 export type ThemeProviderProps = {
   readonly theme: TerminalTheme;
@@ -104,7 +104,7 @@ export type ThemeProviderProps = {
 };
 
 /**
- * テーマを提供するProviderコンポーネント
+ * Provider component that provides theme
  */
 export const ThemeProvider: FC<ThemeProviderProps> = ({ theme, children }) => {
   const value: ThemeContextValue = {
@@ -114,4 +114,3 @@ export const ThemeProvider: FC<ThemeProviderProps> = ({ theme, children }) => {
 
   return createElement(ThemeContext.Provider, { value }, children);
 };
-
