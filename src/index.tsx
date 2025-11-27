@@ -3,9 +3,11 @@ import process from 'node:process';
 import { render } from 'ink';
 import React from 'react';
 
-import { LaunchProjectUseCase, ListProjectsUseCase, TerminateProjectUseCase } from './application/usecases.js';
+import { LaunchEditorOnlyUseCase, LaunchProjectUseCase, LaunchWithEditorUseCase, ListProjectsUseCase, TerminateProjectUseCase } from './application/usecases.js';
 import { MacEditorPathResolver } from './infrastructure/editor.js';
 import { WinEditorPathResolver } from './infrastructure/editor.win.js';
+import { MacExternalEditorLauncher, MacExternalEditorPathReader } from './infrastructure/externalEditor.js';
+import { WinExternalEditorLauncher, WinExternalEditorPathReader } from './infrastructure/externalEditor.win.js';
 import { GitRepositoryInfoReader } from './infrastructure/git.js';
 import { NodeProcessLauncher } from './infrastructure/process.js';
 import type { TerminalTheme } from './infrastructure/terminalTheme.js';
@@ -49,6 +51,21 @@ const bootstrap = async (): Promise<void> => {
     unityProcessTerminator,
     unityTempDirectoryCleaner,
   );
+  const externalEditorPathReader = isWindows
+    ? new WinExternalEditorPathReader()
+    : new MacExternalEditorPathReader();
+  const externalEditorLauncher = isWindows
+    ? new WinExternalEditorLauncher()
+    : new MacExternalEditorLauncher();
+  const launchWithEditorUseCase = new LaunchWithEditorUseCase(
+    launchProjectUseCase,
+    externalEditorPathReader,
+    externalEditorLauncher,
+  );
+  const launchEditorOnlyUseCase = new LaunchEditorOnlyUseCase(
+    externalEditorPathReader,
+    externalEditorLauncher,
+  );
   const useGitRootName = !process.argv.includes('--no-git-root-name');
 
   try {
@@ -80,6 +97,8 @@ const bootstrap = async (): Promise<void> => {
         <App
           projects={projects}
           onLaunch={(project) => launchProjectUseCase.execute(project)}
+          onLaunchWithEditor={(project) => launchWithEditorUseCase.execute(project)}
+          onLaunchEditorOnly={(project) => launchEditorOnlyUseCase.execute(project)}
           onTerminate={(project) => terminateProjectUseCase.execute(project)}
           onRefresh={() => listProjectsUseCase.execute()}
           useGitRootName={useGitRootName}
