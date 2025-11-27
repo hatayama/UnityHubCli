@@ -46,7 +46,7 @@ export class WinExternalEditorPathReader implements IExternalEditorPathReader {
         'query',
         REGISTRY_PATH,
         '/v',
-        'kScriptsDefaultApp*',
+        'kScriptsDefaultApp',
       ]);
       configuredPath = parseRegistryOutput(result.stdout);
     } catch {
