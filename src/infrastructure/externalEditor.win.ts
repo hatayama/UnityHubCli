@@ -1,7 +1,7 @@
 import { execFile, spawn } from 'node:child_process';
-import { constants } from 'node:fs';
+import { constants, existsSync } from 'node:fs';
 import { access } from 'node:fs/promises';
-import { basename } from 'node:path';
+import { basename, join } from 'node:path';
 import { promisify } from 'node:util';
 
 import type {
@@ -75,12 +75,17 @@ export class WinExternalEditorPathReader implements IExternalEditorPathReader {
 export class WinExternalEditorLauncher implements IExternalEditorLauncher {
   /**
    * Launches the external editor with the specified project root.
+   * If a .sln file exists with the project name, it will be opened directly.
+   * This allows Rider to open the solution without showing a selection dialog.
    * @param editorPath - The path to the editor executable.
    * @param projectRoot - The project root directory to open.
    */
   async launch(editorPath: string, projectRoot: string): Promise<void> {
+    const projectName = basename(projectRoot);
+    const slnFilePath = join(projectRoot, `${projectName}.sln`);
+    const targetPath = existsSync(slnFilePath) ? slnFilePath : projectRoot;
     await new Promise<void>((resolve, reject) => {
-      const child = spawn(editorPath, [projectRoot], {
+      const child = spawn(editorPath, [targetPath], {
         detached: true,
         stdio: 'ignore',
       });

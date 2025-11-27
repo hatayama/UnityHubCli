@@ -153,6 +153,11 @@ export type LaunchWithEditorResult = {
   readonly message: string;
 };
 
+export type LaunchEditorOnlyResult = {
+  readonly editorLaunched: boolean;
+  readonly message: string;
+};
+
 /**
  * Launches a Unity project along with the configured external editor.
  * If the external editor fails to launch, Unity will still be opened.
@@ -222,5 +227,64 @@ export class LaunchWithEditorUseCase {
       return ` (Editor not found: ${editorResult.configuredPath})`;
     }
     return '';
+  }
+}
+
+/**
+ * Launches only the external editor without starting Unity.
+ */
+export class LaunchEditorOnlyUseCase {
+  constructor(
+    private readonly externalEditorPathReader: IExternalEditorPathReader,
+    private readonly externalEditorLauncher: IExternalEditorLauncher,
+  ) {}
+
+  /**
+   * Launches only the external editor for the specified project.
+   * @param project - The Unity project to open in the editor.
+   * @returns The result of the launch operation.
+   */
+  async execute(project: UnityProject): Promise<LaunchEditorOnlyResult> {
+    const editorResult = await this.externalEditorPathReader.read();
+
+    if (editorResult.status === 'not_configured') {
+      return {
+        editorLaunched: false,
+        message: 'Editor not configured in Unity preferences',
+      };
+    }
+
+    if (editorResult.status === 'not_found') {
+      return {
+        editorLaunched: false,
+        message: `Editor not found: ${editorResult.configuredPath}`,
+      };
+    }
+
+    const launched = await this.tryLaunchEditor(editorResult, project.path);
+    return {
+      editorLaunched: launched,
+      message: launched
+        ? `Launched: ${editorResult.name}`
+        : `Failed to launch ${editorResult.name}`,
+    };
+  }
+
+  /**
+   * Attempts to launch the external editor.
+   * @param editorResult - The found external editor result.
+   * @param projectPath - The path to the project root.
+   * @returns Whether the editor was successfully launched.
+   */
+  private async tryLaunchEditor(
+    editorResult: Extract<ExternalEditorResult, { status: 'found' }>,
+    projectPath: string,
+  ): Promise<boolean> {
+    try {
+      await this.externalEditorLauncher.launch(editorResult.path, projectPath);
+      return true;
+    } catch {
+      return false;
+    }
   }
 }
