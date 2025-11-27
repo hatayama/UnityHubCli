@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.15.0](https://github.com/hatayama/UnityHubCli/compare/unity-hub-cli-v0.14.0...unity-hub-cli-v0.15.0) (2025-11-27)
+
+
+### Features
+
+* Add editor-only launch and .sln file direct specification ([#52](https://github.com/hatayama/UnityHubCli/issues/52)) ([0ac26d7](https://github.com/hatayama/UnityHubCli/commit/0ac26d7a66437298033c9826c1e0552b1e7dfa9b))
+
 ## [0.14.0](https://github.com/hatayama/UnityHubCli/compare/unity-hub-cli-v0.13.2...unity-hub-cli-v0.14.0) (2025-11-26)
 
 
