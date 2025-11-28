@@ -1,6 +1,7 @@
 import { spawn } from 'node:child_process';
 
 import type { IProcessLauncher } from '../application/ports.js';
+import { getMsysDisabledEnv } from '../presentation/utils/path.js';
 
 export class NodeProcessLauncher implements IProcessLauncher {
   async launch(command: string, args: readonly string[], options?: { detached?: boolean }): Promise<void> {
@@ -10,6 +11,7 @@ export class NodeProcessLauncher implements IProcessLauncher {
       const child = spawn(command, args, {
         detached,
         stdio: 'ignore',
+        env: getMsysDisabledEnv(),
       });
 
       const handleError = (error: Error): void => {

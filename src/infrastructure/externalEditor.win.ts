@@ -9,6 +9,7 @@ import type {
   IExternalEditorLauncher,
   IExternalEditorPathReader,
 } from '../application/ports.js';
+import { getMsysDisabledEnv } from '../presentation/utils/path.js';
 
 const execFileAsync = promisify(execFile);
 
@@ -66,10 +67,11 @@ export class WinExternalEditorPathReader implements IExternalEditorPathReader {
     let configuredPath: string | undefined;
     try {
       // Query entire registry path since Unity uses hash suffixes (e.g., kScriptsDefaultApp_h2657262712)
-      const result = await execFileAsync('reg', [
-        'query',
-        REGISTRY_PATH,
-      ]);
+      const result = await execFileAsync(
+        'reg',
+        ['query', REGISTRY_PATH],
+        { env: getMsysDisabledEnv() },
+      );
       configuredPath = parseRegistryOutput(result.stdout);
     } catch {
       return { status: 'not_configured' };
@@ -124,6 +126,7 @@ export class WinExternalEditorLauncher implements IExternalEditorLauncher {
       const child = spawn(editorPath, [targetPath], {
         detached: true,
         stdio: 'ignore',
+        env: getMsysDisabledEnv(),
       });
 
       const handleError = (error: Error): void => {

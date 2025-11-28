@@ -4,6 +4,7 @@ import { promisify } from 'node:util';
 
 import type { IUnityProcessReader, IUnityProcessTerminator } from '../application/ports.js';
 import type { UnityProcess } from '../domain/models.js';
+import { getMsysDisabledEnv } from '../presentation/utils/path.js';
 
 const execFileAsync = promisify(execFile);
 
@@ -125,7 +126,7 @@ export class WinUnityProcessReader implements IUnityProcessReader {
           '-Command',
           psCommand,
         ],
-        { encoding: 'utf8' },
+        { encoding: 'utf8', env: getMsysDisabledEnv() },
       );
       stdout = (result.stdout ?? '').trim();
     } catch (error) {
@@ -159,14 +160,18 @@ export class WinUnityProcessTerminator implements IUnityProcessTerminator {
   ): Promise<{ readonly terminated: boolean; readonly stage?: 'graceful' | 'sigterm' | 'sigkill' }> {
     // Stage 1: Stop-Process (gentle)
     try {
-      await execFileAsync('powershell.exe', [
-        '-NoProfile',
-        '-NonInteractive',
-        '-ExecutionPolicy',
-        'Bypass',
-        '-Command',
-        `Stop-Process -Id ${unityProcess.pid}`,
-      ]);
+      await execFileAsync(
+        'powershell.exe',
+        [
+          '-NoProfile',
+          '-NonInteractive',
+          '-ExecutionPolicy',
+          'Bypass',
+          '-Command',
+          `Stop-Process -Id ${unityProcess.pid}`,
+        ],
+        { env: getMsysDisabledEnv() },
+      );
     } catch (error) {
       if (!ensureProcessAlive(unityProcess.pid)) {
         return { terminated: true, stage: 'sigterm' };
@@ -185,14 +190,18 @@ export class WinUnityProcessTerminator implements IUnityProcessTerminator {
 
     // Stage 2: Stop-Process -Force
     try {
-      await execFileAsync('powershell.exe', [
-        '-NoProfile',
-        '-NonInteractive',
-        '-ExecutionPolicy',
-        'Bypass',
-        '-Command',
-        `Stop-Process -Id ${unityProcess.pid} -Force`,
-      ]);
+      await execFileAsync(
+        'powershell.exe',
+        [
+          '-NoProfile',
+          '-NonInteractive',
+          '-ExecutionPolicy',
+          'Bypass',
+          '-Command',
+          `Stop-Process -Id ${unityProcess.pid} -Force`,
+        ],
+        { env: getMsysDisabledEnv() },
+      );
     } catch (error) {
       if (!ensureProcessAlive(unityProcess.pid)) {
         return { terminated: true, stage: 'sigkill' };

@@ -2,6 +2,33 @@ const homeDirectory: string = process.env.HOME ?? process.env.USERPROFILE ?? '';
 const normalizedHomeDirectory: string = homeDirectory.replace(/\\/g, '/');
 const homePrefix: string = normalizedHomeDirectory ? `${normalizedHomeDirectory}/` : '';
 
+/**
+ * Detects if the current environment is Git Bash (MSYS/MINGW64).
+ * Used to determine if MSYS path conversion should be disabled.
+ */
+export const isGitBashEnvironment = (): boolean => {
+  if (process.platform !== 'win32') {
+    return false;
+  }
+  return Boolean(process.env.MSYSTEM) || /bash/i.test(process.env.SHELL ?? '');
+};
+
+/**
+ * Returns environment variables with MSYS path conversion disabled.
+ * Use this when spawning Windows executables from Git Bash to prevent
+ * automatic path conversion (e.g., C:\path being converted to /c/path).
+ */
+export const getMsysDisabledEnv = (): NodeJS.ProcessEnv => {
+  if (!isGitBashEnvironment()) {
+    return process.env;
+  }
+  return {
+    ...process.env,
+    MSYS_NO_PATHCONV: '1',
+    MSYS2_ARG_CONV_EXCL: '*',
+  };
+};
+
 export const shortenHomePath = (targetPath: string): string => {
   if (!normalizedHomeDirectory) {
     return targetPath;
