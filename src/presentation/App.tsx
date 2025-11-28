@@ -32,9 +32,8 @@ const extractRootFolder = (repository?: GitRepositoryInfo): string | undefined =
 
 
 const minimumVisibleProjectCount: number = 4;
-const editorOnlyKey: string = process.platform === 'darwin' ? '⌥o' : 'Alt+o';
 const defaultHintMessage =
-  `j/k Select · [o]pen [O]+Editor [${editorOnlyKey}]Editor [q]uit [r]efresh [c]opy [s]ort [v]isibility · ^C Exit`;
+  `j/k Select · [o]pen [O]+Editor [i]de [q]uit [r]efresh [c]opy [s]ort [v]isibility · ^C Exit`;
  
 
  
@@ -674,8 +673,7 @@ export const App: React.FC<AppProps> = ({
       return;
     }
 
-    // Option+O on Mac produces 'ø', Alt+O on Windows sends 'o' with meta flag
-    if (input === 'ø' || (input === 'o' && key.meta)) {
+    if (input === 'i') {
       void launchEditorOnly();
       return;
     }
