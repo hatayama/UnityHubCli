@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.16.0](https://github.com/hatayama/UnityHubCli/compare/unity-hub-cli-v0.15.0...unity-hub-cli-v0.16.0) (2025-11-28)
+
+
+### Features
+
+* added support for opening IDE files on Windows. It now also works in the GitBash environment. ([#54](https://github.com/hatayama/UnityHubCli/issues/54)) ([9230b11](https://github.com/hatayama/UnityHubCli/commit/9230b1152d33de0697bb16aa71076ee1d39e8b40))
+
 ## [0.15.0](https://github.com/hatayama/UnityHubCli/compare/unity-hub-cli-v0.14.0...unity-hub-cli-v0.15.0) (2025-11-27)
 
 
