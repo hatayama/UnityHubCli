@@ -4,7 +4,7 @@
   "description": "A CLI tool that reads Unity Hub's projects and launches Unity Editor with an interactive TUI",
   "main": "dist/index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
+    "test": "vitest run",
     "dev": "tsx src/index.ts",
     "build": "tsup",
     "start": "node dist/index.js",
@@ -55,6 +55,7 @@
     "prettier": "^3.6.2",
     "tsup": "^8.5.0",
     "tsx": "^4.20.6",
-    "typescript": "^5.9.3"
+    "typescript": "^5.9.3",
+    "vitest": "^4.0.14"
   }
 }

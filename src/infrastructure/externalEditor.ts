@@ -48,6 +48,15 @@ export class MacExternalEditorPathReader implements IExternalEditorPathReader {
   }
 }
 
+/** Editors that prefer opening .sln files directly (IDEs with solution support) */
+const slnPreferringEditors = ['rider', 'visual studio'];
+
+/** Checks if the editor prefers .sln files based on app name */
+const prefersSlnFile = (editorPath: string): boolean => {
+  const editorName = basename(editorPath, '.app').toLowerCase();
+  return slnPreferringEditors.some((name) => editorName.includes(name));
+};
+
 /**
  * Launches an external editor application on macOS.
  * Uses the `open -a` command to launch the application.
@@ -55,15 +64,20 @@ export class MacExternalEditorPathReader implements IExternalEditorPathReader {
 export class MacExternalEditorLauncher implements IExternalEditorLauncher {
   /**
    * Launches the external editor with the specified project root.
-   * If a .sln file exists with the project name, it will be opened directly.
-   * This allows Rider to open the solution without showing a selection dialog.
+   * For Rider/Visual Studio: opens .sln file directly if it exists.
+   * For VS Code/Cursor and others: opens the project folder.
    * @param editorPath - The path to the editor application.
    * @param projectRoot - The project root directory to open.
    */
   async launch(editorPath: string, projectRoot: string): Promise<void> {
-    const projectName = basename(projectRoot);
-    const slnFilePath = join(projectRoot, `${projectName}.sln`);
-    const targetPath = existsSync(slnFilePath) ? slnFilePath : projectRoot;
+    let targetPath = projectRoot;
+    if (prefersSlnFile(editorPath)) {
+      const projectName = basename(projectRoot);
+      const slnFilePath = join(projectRoot, `${projectName}.sln`);
+      if (existsSync(slnFilePath)) {
+        targetPath = slnFilePath;
+      }
+    }
     await execFileAsync('open', ['-a', editorPath, targetPath]);
   }
 }

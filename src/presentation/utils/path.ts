@@ -2,6 +2,38 @@ const homeDirectory: string = process.env.HOME ?? process.env.USERPROFILE ?? '';
 const normalizedHomeDirectory: string = homeDirectory.replace(/\\/g, '/');
 const homePrefix: string = normalizedHomeDirectory ? `${normalizedHomeDirectory}/` : '';
 
+/**
+ * Detects if the current environment is Git Bash (MSYS/MINGW64).
+ * Used to determine if MSYS path conversion should be disabled.
+ *
+ * Detection is based solely on MSYSTEM environment variable, which is set
+ * by MSYS2/Git Bash to values like 'MINGW64', 'MINGW32', 'MSYS', etc.
+ * We intentionally avoid checking SHELL for '/bash' as that could cause
+ * false positives with other Windows bash installations (e.g., WSL, Cygwin).
+ */
+export const isGitBashEnvironment = (): boolean => {
+  if (process.platform !== 'win32') {
+    return false;
+  }
+  return Boolean(process.env.MSYSTEM);
+};
+
+/**
+ * Returns environment variables with MSYS path conversion disabled.
+ * Use this when spawning Windows executables from Git Bash to prevent
+ * automatic path conversion (e.g., C:\path being converted to /c/path).
+ */
+export const getMsysDisabledEnv = (): NodeJS.ProcessEnv => {
+  if (!isGitBashEnvironment()) {
+    return process.env;
+  }
+  return {
+    ...process.env,
+    MSYS_NO_PATHCONV: '1',
+    MSYS2_ARG_CONV_EXCL: '*',
+  };
+};
+
 export const shortenHomePath = (targetPath: string): string => {
   if (!normalizedHomeDirectory) {
     return targetPath;
@@ -18,10 +50,8 @@ export const shortenHomePath = (targetPath: string): string => {
 
 export const buildCdCommand = (targetPath: string): string => {
   if (process.platform === 'win32') {
-    const isGitBash: boolean = Boolean(process.env.MSYSTEM) || /bash/i.test(process.env.SHELL ?? '');
-    if (isGitBash) {
-      const windowsPath: string = targetPath;
-      const msysPath: string = windowsPath
+    if (isGitBashEnvironment()) {
+      const msysPath: string = targetPath
         .replace(/^([A-Za-z]):[\\/]/, (_, drive: string) => `/${drive.toLowerCase()}/`)
         .replace(/\\/g, '/');
       const escapedForPosix: string = msysPath.replace(/'/g, "'\\''");
