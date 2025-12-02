@@ -59,6 +59,15 @@ The display includes Git branch (if present), Unity version, project path, and l
 
 - `--no-git-root-name`: Display Unity project titles instead of Git repository root folder names.
 
+## Security
+
+This project implements supply chain attack prevention measures:
+
+- **ignore-scripts**: Disables automatic script execution during `npm install`
+- **Dependabot**: Automated weekly security updates
+- **Security audit CI**: Runs `npm audit` and `lockfile-lint` on every PR
+- **Pinned versions**: All dependencies use exact versions (no `^` or `~`)
+
 ## License
 
 MIT
