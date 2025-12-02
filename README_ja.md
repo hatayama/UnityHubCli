@@ -59,6 +59,15 @@ PowerShell / CMD で動作します。Git Bash は ConPTY ベースのターミ�
 
 - `--no-git-root-name`: Gitリポジトリのルートフォルダ名ではなく、Unityプロジェクトのタイトルを表示します
 
+## セキュリティ
+
+このプロジェクトはサプライチェーン攻撃対策を実装しています：
+
+- **ignore-scripts**: `npm install` 時のスクリプト自動実行を無効化
+- **Dependabot**: 週次の自動セキュリティアップデート
+- **Security audit CI**: PR ごとに `npm audit` と `lockfile-lint` を実行
+- **Pinned versions**: すべての依存関係で正確なバージョンを指定（`^` や `~` なし）
+
 ## ライセンス
 
 MIT
