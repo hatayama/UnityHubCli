@@ -25,7 +25,8 @@
       "node": {
         "extensions": [".ts", ".tsx", ".d.ts", ".js"]
       }
-    }
+    },
+    "import/core-modules": ["vitest"]
   },
   "rules": {
     "no-var": "error",
