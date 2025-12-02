@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.17.0](https://github.com/hatayama/UnityHubCli/compare/unity-hub-cli-v0.16.0...unity-hub-cli-v0.17.0) (2025-12-02)
+
+
+### Features
+
+* add supply chain security measures ([#57](https://github.com/hatayama/UnityHubCli/issues/57)) ([b46bd96](https://github.com/hatayama/UnityHubCli/commit/b46bd9653f0cfab6624555cc32e7901b5be2fd22))
+
 ## [0.16.0](https://github.com/hatayama/UnityHubCli/compare/unity-hub-cli-v0.15.0...unity-hub-cli-v0.16.0) (2025-11-28)
 
 
