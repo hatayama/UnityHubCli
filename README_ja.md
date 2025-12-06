@@ -105,8 +105,9 @@ unity-hub() {
 このプロジェクトはサプライチェーン攻撃対策を実装しています：
 
 - **ignore-scripts**: `npm install` 時のスクリプト自動実行を無効化
+- **@lavamoat/allow-scripts**: パッケージのインストールスクリプト実行を明示的に制御
 - **Dependabot**: 週次の自動セキュリティアップデート
-- **Security audit CI**: PR ごとに `npm audit` と `lockfile-lint` を実行
+- **Security audit CI**: PR ごとに `npm audit`、`lockfile-lint`、OSV-Scanner を実行
 - **Pinned versions**: すべての依存関係で正確なバージョンを指定（`^` や `~` なし）
 
 ## ライセンス
