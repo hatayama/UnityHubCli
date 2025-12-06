@@ -1,5 +1,6 @@
 import process from 'node:process';
 
+import chalk from 'chalk';
 import { render } from 'ink';
 import React from 'react';
 
@@ -21,7 +22,60 @@ import { UnityTempDirectoryCleaner } from './infrastructure/unityTemp.js';
 import { App } from './presentation/App.js';
 import { ThemeProvider } from './presentation/theme.js';
 
+const getShellInitScript = (): string => {
+  const shell = process.env['SHELL'] ?? '';
+  const isWindows = process.platform === 'win32';
+
+  if (shell.includes('fish')) {
+    return `function unity-hub
+  set -l path (npx unity-hub-cli --output-path-on-exit)
+  if test -n "$path"
+    cd $path
+  end
+end`;
+  }
+
+  if (shell.includes('bash') || shell.includes('zsh')) {
+    return `unity-hub() {
+  local path
+  path=$(npx unity-hub-cli --output-path-on-exit)
+  if [ -n "$path" ]; then
+    cd "$path"
+  fi
+}`;
+  }
+
+  // Windows PowerShell (no $SHELL set)
+  if (isWindows) {
+    return `function unity-hub {
+  $path = npx unity-hub-cli --output-path-on-exit
+  if ($path) {
+    Set-Location $path
+  }
+}`;
+  }
+
+  // Default: bash/zsh compatible
+  return `unity-hub() {
+  local path
+  path=$(npx unity-hub-cli --output-path-on-exit)
+  if [ -n "$path" ]; then
+    cd "$path"
+  fi
+}`;
+};
+
 const bootstrap = async (): Promise<void> => {
+  const args = process.argv.slice(2);
+
+  if (args.includes('--shell-init')) {
+    process.stdout.write(getShellInitScript());
+    process.stdout.write('\n');
+    return;
+  }
+
+  const outputPathOnExit = args.includes('--output-path-on-exit');
+
   const isWindows = process.platform === 'win32';
   const unityHubReader = isWindows ? new WinUnityHubProjectsReader() : new MacUnityHubProjectsReader();
   const gitRepositoryInfoReader = new GitRepositoryInfoReader();
@@ -88,10 +142,19 @@ const bootstrap = async (): Promise<void> => {
       return;
     }
 
+    // When outputPathOnExit is enabled, stdout is redirected to a file, so force color output
+    if (outputPathOnExit && process.stderr.isTTY) {
+      chalk.level = 3; // Force truecolor
+    }
+
     // Detect terminal background color to determine theme
     const theme: TerminalTheme = await detectTerminalTheme();
 
+    let lastOpenedPath: string | undefined;
+
     const projects = await listProjectsUseCase.execute();
+    // When outputPathOnExit is enabled, render TUI to stderr so stdout can be used for path output
+    const renderOptions = outputPathOnExit ? { stdout: process.stderr, stdin: process.stdin } : undefined;
     const { waitUntilExit } = render(
       <ThemeProvider theme={theme}>
         <App
@@ -102,11 +165,25 @@ const bootstrap = async (): Promise<void> => {
           onTerminate={(project) => terminateProjectUseCase.execute(project)}
           onRefresh={() => listProjectsUseCase.execute()}
           useGitRootName={useGitRootName}
+          outputPathOnExit={outputPathOnExit}
+          onSetExitPath={(path) => {
+            lastOpenedPath = path;
+          }}
         />
       </ThemeProvider>,
+      renderOptions,
     );
     await waitUntilExit();
-    process.stdout.write('\x1B[2J\x1B[3J\x1B[H');
+
+    if (outputPathOnExit) {
+      // When outputPathOnExit is enabled, TUI is on stderr, so clear stderr
+      process.stderr.write('\x1B[2J\x1B[3J\x1B[H');
+      if (lastOpenedPath) {
+        process.stdout.write(lastOpenedPath);
+      }
+    } else {
+      process.stdout.write('\x1B[2J\x1B[3J\x1B[H');
+    }
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
     // eslint-disable-next-line no-console

@@ -58,6 +58,47 @@ PowerShell / CMD で動作します。Git Bash は ConPTY ベースのターミ�
 ## CLIオプション
 
 - `--no-git-root-name`: Gitリポジトリのルートフォルダ名ではなく、Unityプロジェクトのタイトルを表示します
+- `--output-path-on-exit`: 終了時に最後に開いたプロジェクトのパスを標準出力に出力します。シェル統合用。
+- `--shell-init`: シェル統合用の関数を出力します（bash/zsh、fish、PowerShell 構文）。
+
+## シェル統合
+
+Unity起動後、自動的にそのプロジェクトディレクトリに `cd` するシェル関数を追加できます。
+
+以下のコマンドでシェル設定に関数を追加：
+
+```bash
+# zsh の場合
+npx unity-hub-cli --shell-init >> ~/.zshrc
+
+# bash の場合
+npx unity-hub-cli --shell-init >> ~/.bashrc
+
+# fish の場合
+npx unity-hub-cli --shell-init >> ~/.config/fish/config.fish
+
+# PowerShell の場合
+npx unity-hub-cli --shell-init >> $PROFILE
+```
+
+または、シェル設定に以下を手動で追加：
+
+```bash
+unity-hub() {
+  local path
+  path=$(npx unity-hub-cli --output-path-on-exit)
+  if [ -n "$path" ]; then
+    cd "$path"
+  fi
+}
+```
+
+関数名は自由に変更できます（例：`unity-hub`、`uhub`、`uh`）。
+
+これで `unity-hub` 関数を使うと：
+1. Unityプロジェクト一覧を表示・選択
+2. `o` でUnityを起動
+3. ターミナルがプロジェクトのディレクトリに自動で `cd` される
 
 ## セキュリティ
 

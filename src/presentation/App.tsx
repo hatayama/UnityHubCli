@@ -52,6 +52,8 @@ type AppProps = {
   readonly onTerminate: (project: UnityProject) => Promise<TerminateResult>;
   readonly onRefresh?: () => Promise<ProjectView[]>;
   readonly useGitRootName?: boolean;
+  readonly outputPathOnExit?: boolean;
+  readonly onSetExitPath?: (path: string) => void;
 };
 
 export const App: React.FC<AppProps> = ({
@@ -62,6 +64,8 @@ export const App: React.FC<AppProps> = ({
   onTerminate,
   onRefresh,
   useGitRootName = true,
+  outputPathOnExit = false,
+  onSetExitPath,
 }) => {
   const { exit } = useApp();
   const { stdout } = useStdout();
@@ -295,8 +299,9 @@ export const App: React.FC<AppProps> = ({
     }
 
     const { project } = projectView;
+    const cdTarget = getCopyTargetPath(projectView);
+
     try {
-      const cdTarget = getCopyTargetPath(projectView);
       const command = buildCdCommand(cdTarget);
       clipboard.writeSync(command);
     } catch (error) {
@@ -310,6 +315,13 @@ export const App: React.FC<AppProps> = ({
 
     try {
       await onLaunch(project);
+
+      if (outputPathOnExit) {
+        onSetExitPath?.(cdTarget);
+        exit();
+        return;
+      }
+
       setLaunchedProjects((previous) => {
         const next = new Set(previous);
         next.add(project.id);
@@ -323,6 +335,7 @@ export const App: React.FC<AppProps> = ({
         next.delete(project.id);
         return next;
       });
+
       setHint(`Launched: ${project.title}`);
       setTimeout(() => {
         setHint(defaultHintMessage);
@@ -342,7 +355,7 @@ export const App: React.FC<AppProps> = ({
         setHint(defaultHintMessage);
       }, 3000);
     }
-  }, [index, onLaunch, sortedProjects]);
+  }, [exit, index, onLaunch, onSetExitPath, outputPathOnExit, sortedProjects]);
 
   const launchSelectedWithEditor = useCallback(async () => {
     if (!onLaunchWithEditor) {
@@ -363,8 +376,9 @@ export const App: React.FC<AppProps> = ({
     }
 
     const { project } = projectView;
+    const cdTarget = getCopyTargetPath(projectView);
+
     try {
-      const cdTarget = getCopyTargetPath(projectView);
       const command = buildCdCommand(cdTarget);
       clipboard.writeSync(command);
     } catch (error) {
@@ -378,6 +392,13 @@ export const App: React.FC<AppProps> = ({
 
     try {
       const result = await onLaunchWithEditor(project);
+
+      if (outputPathOnExit) {
+        onSetExitPath?.(cdTarget);
+        exit();
+        return;
+      }
+
       setLaunchedProjects((previous) => {
         const next = new Set(previous);
         next.add(project.id);
@@ -391,6 +412,7 @@ export const App: React.FC<AppProps> = ({
         next.delete(project.id);
         return next;
       });
+
       setHint(result.message);
       setTimeout(() => {
         setHint(defaultHintMessage);
@@ -410,7 +432,7 @@ export const App: React.FC<AppProps> = ({
         setHint(defaultHintMessage);
       }, 3000);
     }
-  }, [index, onLaunchWithEditor, sortedProjects]);
+  }, [exit, index, onLaunchWithEditor, onSetExitPath, outputPathOnExit, sortedProjects]);
 
   const launchEditorOnly = useCallback(async () => {
     if (!onLaunchEditorOnly) {

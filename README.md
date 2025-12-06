@@ -58,6 +58,47 @@ The display includes Git branch (if present), Unity version, project path, and l
 ## CLI Options
 
 - `--no-git-root-name`: Display Unity project titles instead of Git repository root folder names.
+- `--output-path-on-exit`: Output the last opened project path to stdout when exiting. Used for shell integration.
+- `--shell-init`: Output shell function for integration (bash/zsh, fish, or PowerShell syntax).
+
+## Shell Integration
+
+You can add a shell function to automatically `cd` to the project directory after opening Unity.
+
+Run the following command to add the function to your shell config:
+
+```bash
+# For zsh
+npx unity-hub-cli --shell-init >> ~/.zshrc
+
+# For bash
+npx unity-hub-cli --shell-init >> ~/.bashrc
+
+# For fish
+npx unity-hub-cli --shell-init >> ~/.config/fish/config.fish
+
+# For PowerShell
+npx unity-hub-cli --shell-init >> $PROFILE
+```
+
+Or manually add the following to your shell config:
+
+```bash
+unity-hub() {
+  local path
+  path=$(npx unity-hub-cli --output-path-on-exit)
+  if [ -n "$path" ]; then
+    cd "$path"
+  fi
+}
+```
+
+The function name can be anything you like (e.g., `unity-hub`, `uhub`, `uh`).
+
+Now you can use `unity-hub` to:
+1. Browse and select Unity projects
+2. Press `o` to launch Unity
+3. Your terminal automatically `cd`s to the project directory
 
 ## Security
 
