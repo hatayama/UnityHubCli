@@ -59,7 +59,7 @@ The display includes Git branch (if present), Unity version, project path, and l
 
 - `--no-git-root-name`: Display Unity project titles instead of Git repository root folder names.
 - `--output-path-on-exit`: Output the last opened project path to stdout when exiting. Used for shell integration.
-- `--shell-init`: Output shell function for integration. Detects your shell (bash/zsh/fish) automatically.
+- `--shell-init`: Output shell function for integration (bash/zsh or fish syntax).
 
 ## Shell Integration
 
