@@ -22,8 +22,38 @@ import { UnityTempDirectoryCleaner } from './infrastructure/unityTemp.js';
 import { App } from './presentation/App.js';
 import { ThemeProvider } from './presentation/theme.js';
 
+const getShellInitScript = (): string => {
+  const shell = process.env['SHELL'] ?? '';
+  const isFish = shell.includes('fish');
+
+  if (isFish) {
+    return `function unity-hub
+  set -l path (npx unity-hub-cli --output-path-on-exit)
+  if test -n "$path"
+    cd $path
+  end
+end`;
+  }
+
+  // bash/zsh compatible
+  return `unity-hub() {
+  local path
+  path=$(npx unity-hub-cli --output-path-on-exit)
+  if [ -n "$path" ]; then
+    cd "$path"
+  fi
+}`;
+};
+
 const bootstrap = async (): Promise<void> => {
   const args = process.argv.slice(2);
+
+  if (args.includes('--shell-init')) {
+    process.stdout.write(getShellInitScript());
+    process.stdout.write('\n');
+    return;
+  }
+
   const outputPathOnExit = args.includes('--output-path-on-exit');
 
   const isWindows = process.platform === 'win32';
