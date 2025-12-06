@@ -59,7 +59,7 @@ PowerShell / CMD で動作します。Git Bash は ConPTY ベースのターミ�
 
 - `--no-git-root-name`: Gitリポジトリのルートフォルダ名ではなく、Unityプロジェクトのタイトルを表示します
 - `--output-path-on-exit`: 終了時に最後に開いたプロジェクトのパスを標準出力に出力します。シェル統合用。
-- `--shell-init`: シェル統合用の関数を出力します（bash/zsh または fish 構文）。
+- `--shell-init`: シェル統合用の関数を出力します（bash/zsh、fish、PowerShell 構文）。
 
 ## シェル統合
 
@@ -76,6 +76,9 @@ npx unity-hub-cli --shell-init >> ~/.bashrc
 
 # fish の場合
 npx unity-hub-cli --shell-init >> ~/.config/fish/config.fish
+
+# PowerShell の場合
+npx unity-hub-cli --shell-init >> $PROFILE
 ```
 
 または、シェル設定に以下を手動で追加：

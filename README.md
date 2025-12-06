@@ -59,7 +59,7 @@ The display includes Git branch (if present), Unity version, project path, and l
 
 - `--no-git-root-name`: Display Unity project titles instead of Git repository root folder names.
 - `--output-path-on-exit`: Output the last opened project path to stdout when exiting. Used for shell integration.
-- `--shell-init`: Output shell function for integration (bash/zsh or fish syntax).
+- `--shell-init`: Output shell function for integration (bash/zsh, fish, or PowerShell syntax).
 
 ## Shell Integration
 
@@ -76,6 +76,9 @@ npx unity-hub-cli --shell-init >> ~/.bashrc
 
 # For fish
 npx unity-hub-cli --shell-init >> ~/.config/fish/config.fish
+
+# For PowerShell
+npx unity-hub-cli --shell-init >> $PROFILE
 ```
 
 Or manually add the following to your shell config:

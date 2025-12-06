@@ -24,9 +24,9 @@ import { ThemeProvider } from './presentation/theme.js';
 
 const getShellInitScript = (): string => {
   const shell = process.env['SHELL'] ?? '';
-  const isFish = shell.includes('fish');
+  const isWindows = process.platform === 'win32';
 
-  if (isFish) {
+  if (shell.includes('fish')) {
     return `function unity-hub
   set -l path (npx unity-hub-cli --output-path-on-exit)
   if test -n "$path"
@@ -35,7 +35,27 @@ const getShellInitScript = (): string => {
 end`;
   }
 
-  // bash/zsh compatible
+  if (shell.includes('bash') || shell.includes('zsh')) {
+    return `unity-hub() {
+  local path
+  path=$(npx unity-hub-cli --output-path-on-exit)
+  if [ -n "$path" ]; then
+    cd "$path"
+  fi
+}`;
+  }
+
+  // Windows PowerShell (no $SHELL set)
+  if (isWindows) {
+    return `function unity-hub {
+  $path = npx unity-hub-cli --output-path-on-exit
+  if ($path) {
+    Set-Location $path
+  }
+}`;
+  }
+
+  // Default: bash/zsh compatible
   return `unity-hub() {
   local path
   path=$(npx unity-hub-cli --output-path-on-exit)
