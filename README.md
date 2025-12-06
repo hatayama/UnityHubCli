@@ -105,8 +105,9 @@ Now you can use `unity-hub` to:
 This project implements supply chain attack prevention measures:
 
 - **ignore-scripts**: Disables automatic script execution during `npm install`
+- **@lavamoat/allow-scripts**: Explicitly controls which packages can run install scripts
 - **Dependabot**: Automated weekly security updates
-- **Security audit CI**: Runs `npm audit` and `lockfile-lint` on every PR
+- **Security audit CI**: Runs `npm audit`, `lockfile-lint`, and OSV-Scanner on every PR
 - **Pinned versions**: All dependencies use exact versions (no `^` or `~`)
 
 ## License

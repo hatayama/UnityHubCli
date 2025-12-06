@@ -11,7 +11,8 @@
     "lint": "eslint . --ext .ts,.tsx",
     "lint:fix": "eslint . --ext .ts,.tsx --fix",
     "format": "prettier --write .",
-    "typecheck": "tsc -noEmit"
+    "typecheck": "tsc -noEmit",
+    "allow-scripts": "allow-scripts"
   },
   "repository": {
     "type": "git",
@@ -44,7 +45,16 @@
   "engines": {
     "node": ">=18"
   },
+  "lavamoat": {
+    "allowScripts": {
+      "eslint-import-resolver-typescript>unrs-resolver": false,
+      "tsup>bundle-require>esbuild": false,
+      "tsup>esbuild": false,
+      "tsx>esbuild": false
+    }
+  },
   "devDependencies": {
+    "@lavamoat/allow-scripts": "3.4.1",
     "@types/node": "24.10.1",
     "@types/react": "18.3.26",
     "@typescript-eslint/eslint-plugin": "8.48.1",
