@@ -308,7 +308,7 @@ const bootstrap = async (): Promise<void> => {
         '(If already built) npm run build && winpty node dist/index.js',
         'Details: https://github.com/vadimdemedes/ink/#israwmodesupported',
       ].join('\n');
-      // eslint-disable-next-line no-console
+       
       console.error(message);
       process.exitCode = 1;
       return;
@@ -358,7 +358,7 @@ const bootstrap = async (): Promise<void> => {
     }
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
-    // eslint-disable-next-line no-console
+     
     console.error(message);
     process.exitCode = 1;
   }
@@ -368,7 +368,7 @@ const bootstrap = async (): Promise<void> => {
 // Fire-and-forget with error capture via internal try/catch; extra catch as safety.
 void bootstrap().catch((error) => {
   const message = error instanceof Error ? error.message : String(error);
-  // eslint-disable-next-line no-console
+   
   console.error(message);
   process.exitCode = 1;
 });
