@@ -93,6 +93,10 @@ const getUnityHubCliPath = (): string => {
   return `${binDir}/unity-hub-cli`;
 };
 
+// Uses temp file instead of command substitution $() to avoid subshell issues:
+// 1. $() creates a non-interactive subshell where PATH may not be properly inherited
+// 2. TUI rendering fails when stdout is captured by command substitution
+// With temp file: stdout (path) goes to file, stderr (TUI) goes to terminal
 const getShellInitScript = (): string => {
   const shell = process.env['SHELL'] ?? '';
   const isWindows = process.platform === 'win32';
