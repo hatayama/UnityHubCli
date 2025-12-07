@@ -77,7 +77,7 @@ npm install -g unity-hub-cli
 unity-hub-cli --shell-init
 ```
 
-これでシェル設定ファイル（`.zshrc`、`.bashrc`、`config.fish`）に `unity-hub` 関数が自動的に追加されます。
+これでシェル設定ファイル（`.zshrc`、`.bashrc`、`config.fish`、PowerShellプロファイル）に `unity-hub` 関数が自動的に追加されます。
 
 3. シェルを再読み込み：
 ```bash
@@ -95,6 +95,7 @@ source ~/.zshrc  # またはターミナルを再起動
 
 - `--shell-init` は何度実行しても安全です（マーカーコメントを使って既存の関数を更新します）
 - 関数は環境から検出された絶対パスを使用します
+- **Windows**: シェル統合はPowerShellのみ対応しています。CMDはシェル関数の機能がないため、Unity起動後の自動 `cd` ができません
 
 ## セキュリティ
 

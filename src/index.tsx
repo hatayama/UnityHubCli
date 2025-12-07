@@ -45,6 +45,10 @@ const getShellConfigPath = (): string | undefined => {
   if (shell.includes('fish')) {
     return join(home, '.config', 'fish', 'config.fish');
   }
+  // Windows PowerShell (no $SHELL environment variable)
+  if (process.platform === 'win32') {
+    return join(home, 'Documents', 'WindowsPowerShell', 'Microsoft.PowerShell_profile.ps1');
+  }
   return undefined;
 };
 
@@ -182,7 +186,7 @@ end`;
   if (isWindows) {
     return `function unity-hub {
   $tmpfile = [System.IO.Path]::GetTempFileName()
-  & "${nodePath}" "${cliPath}" --output-path-on-exit > $tmpfile
+  & "${cliPath}" --output-path-on-exit > $tmpfile
   $dir = Get-Content $tmpfile
   Remove-Item $tmpfile
   if ($dir) {

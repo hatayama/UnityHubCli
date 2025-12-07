@@ -77,7 +77,7 @@ npm install -g unity-hub-cli
 unity-hub-cli --shell-init
 ```
 
-This automatically adds the `unity-hub` function to your shell config file (`.zshrc`, `.bashrc`, or `config.fish`).
+This automatically adds the `unity-hub` function to your shell config file (`.zshrc`, `.bashrc`, `config.fish`, or PowerShell profile).
 
 3. Reload your shell:
 ```bash
@@ -95,6 +95,7 @@ Now you can use `unity-hub` to:
 
 - Running `--shell-init` multiple times is safe - it updates the existing function using marker comments
 - The function uses absolute paths detected from your environment
+- **Windows**: Shell integration supports PowerShell only. CMD is not supported because it lacks shell functions required for automatic `cd` after launching Unity
 
 ## Security
 
