@@ -302,18 +302,6 @@ export const App: React.FC<AppProps> = ({
     const cdTarget = getCopyTargetPath(projectView);
 
     try {
-      const command = buildCdCommand(cdTarget);
-      clipboard.writeSync(command);
-    } catch (error) {
-      const message = error instanceof Error ? error.message : String(error);
-      setHint(`Failed to copy: ${message}`);
-      setTimeout(() => {
-        setHint(defaultHintMessage);
-      }, 3000);
-      return;
-    }
-
-    try {
       await onLaunch(project);
 
       if (outputPathOnExit) {
@@ -382,18 +370,6 @@ export const App: React.FC<AppProps> = ({
 
     const { project } = projectView;
     const cdTarget = getCopyTargetPath(projectView);
-
-    try {
-      const command = buildCdCommand(cdTarget);
-      clipboard.writeSync(command);
-    } catch (error) {
-      const message = error instanceof Error ? error.message : String(error);
-      setHint(`Failed to copy: ${message}`);
-      setTimeout(() => {
-        setHint(defaultHintMessage);
-      }, 3000);
-      return;
-    }
 
     try {
       const result = await onLaunchWithEditor(project);
