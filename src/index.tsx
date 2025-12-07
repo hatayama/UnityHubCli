@@ -1,7 +1,7 @@
 import { execSync } from 'node:child_process';
-import { existsSync, readFileSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { homedir } from 'node:os';
-import { join } from 'node:path';
+import { dirname, join } from 'node:path';
 import process from 'node:process';
 import { createInterface } from 'node:readline';
 
@@ -81,7 +81,7 @@ const previewShellInit = (): void => {
 const installShellInit = (): { success: boolean; message: string } => {
   const configPath = getShellConfigPath();
   if (!configPath) {
-    return { success: false, message: 'Unsupported shell. Use --shell-init --dry-run to see the function and add it manually.' };
+    return { success: false, message: 'Unsupported shell. Please copy the function from the README into your shell config manually.' };
   }
 
   const scriptWithMarkers = getShellInitScriptWithMarkers();
@@ -110,6 +110,7 @@ const installShellInit = (): { success: boolean; message: string } => {
     action = 'installed';
   }
 
+  mkdirSync(dirname(configPath), { recursive: true });
   writeFileSync(configPath, newContent, 'utf-8');
   return { success: true, message: `Shell integration ${action} in ${configPath}` };
 };
@@ -201,7 +202,7 @@ const bootstrap = async (): Promise<void> => {
     const configPath = getShellConfigPath();
     if (!configPath) {
       // eslint-disable-next-line no-console
-      console.log('Unsupported shell. Use --shell-init --dry-run to see the function and add it manually.');
+      console.log('Unsupported shell. Please copy the function from the README into your shell config manually.');
       process.exitCode = 1;
       return;
     }
