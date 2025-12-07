@@ -58,47 +58,44 @@ PowerShell / CMD で動作します。Git Bash は ConPTY ベースのターミ�
 ## CLIオプション
 
 - `--no-git-root-name`: Gitリポジトリのルートフォルダ名ではなく、Unityプロジェクトのタイトルを表示します
-- `--output-path-on-exit`: 終了時に最後に開いたプロジェクトのパスを標準出力に出力します。シェル統合用。
-- `--shell-init`: シェル統合用の関数を出力します（bash/zsh、fish、PowerShell 構文）。
+- `--shell-init`: 自動 `cd` 統合用のシェル関数をインストールします（確認プロンプト付き）。
+- `--shell-init --dry-run`: シェル関数をプレビュー表示します（インストールはしません）。
 
 ## シェル統合
 
 Unity起動後、自動的にそのプロジェクトディレクトリに `cd` するシェル関数を追加できます。
 
-以下のコマンドでシェル設定に関数を追加：
+### セットアップ
 
+1. グローバルインストール：
 ```bash
-# zsh の場合
-npx unity-hub-cli --shell-init >> ~/.zshrc
-
-# bash の場合
-npx unity-hub-cli --shell-init >> ~/.bashrc
-
-# fish の場合
-npx unity-hub-cli --shell-init >> ~/.config/fish/config.fish
-
-# PowerShell の場合
-npx unity-hub-cli --shell-init >> $PROFILE
+npm install -g unity-hub-cli
 ```
 
-または、シェル設定に以下を手動で追加：
-
+2. シェル初期化コマンドを実行（シェルを自動検出）：
 ```bash
-unity-hub() {
-  local path
-  path=$(npx unity-hub-cli --output-path-on-exit)
-  if [ -n "$path" ]; then
-    cd "$path"
-  fi
-}
+unity-hub-cli --shell-init
 ```
 
-関数名は自由に変更できます（例：`unity-hub`、`uhub`、`uh`）。
+これでシェル設定ファイル（`.zshrc`、`.bashrc`、`config.fish`、PowerShellプロファイル）に `unity-hub` 関数が自動的に追加されます。
+
+3. シェルを再読み込み：
+```bash
+source ~/.zshrc  # またはターミナルを再起動
+```
+
+### 使い方
 
 これで `unity-hub` 関数を使うと：
 1. Unityプロジェクト一覧を表示・選択
 2. `o` でUnityを起動
 3. ターミナルがプロジェクトのディレクトリに自動で `cd` される
+
+### 備考
+
+- `--shell-init` は何度実行しても安全です（マーカーコメントを使って既存の関数を更新します）
+- 関数は環境から検出された絶対パスを使用します
+- **Windows**: シェル統合はPowerShellのみ対応しています。CMDはシェル関数の機能がないため、Unity起動後の自動 `cd` ができません
 
 ## セキュリティ
 

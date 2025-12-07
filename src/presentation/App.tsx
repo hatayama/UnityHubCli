@@ -302,18 +302,6 @@ export const App: React.FC<AppProps> = ({
     const cdTarget = getCopyTargetPath(projectView);
 
     try {
-      const command = buildCdCommand(cdTarget);
-      clipboard.writeSync(command);
-    } catch (error) {
-      const message = error instanceof Error ? error.message : String(error);
-      setHint(`Failed to copy: ${message}`);
-      setTimeout(() => {
-        setHint(defaultHintMessage);
-      }, 3000);
-      return;
-    }
-
-    try {
       await onLaunch(project);
 
       if (outputPathOnExit) {
@@ -342,6 +330,11 @@ export const App: React.FC<AppProps> = ({
       }, 3000);
     } catch (error) {
       if (error instanceof LaunchCancelledError) {
+        if (outputPathOnExit) {
+          onSetExitPath?.(cdTarget);
+          exit();
+          return;
+        }
         setHint('Launch cancelled');
         setTimeout(() => {
           setHint(defaultHintMessage);
@@ -379,18 +372,6 @@ export const App: React.FC<AppProps> = ({
     const cdTarget = getCopyTargetPath(projectView);
 
     try {
-      const command = buildCdCommand(cdTarget);
-      clipboard.writeSync(command);
-    } catch (error) {
-      const message = error instanceof Error ? error.message : String(error);
-      setHint(`Failed to copy: ${message}`);
-      setTimeout(() => {
-        setHint(defaultHintMessage);
-      }, 3000);
-      return;
-    }
-
-    try {
       const result = await onLaunchWithEditor(project);
 
       if (outputPathOnExit) {
@@ -419,6 +400,11 @@ export const App: React.FC<AppProps> = ({
       }, 3000);
     } catch (error) {
       if (error instanceof LaunchCancelledError) {
+        if (outputPathOnExit) {
+          onSetExitPath?.(cdTarget);
+          exit();
+          return;
+        }
         setHint('Launch cancelled');
         setTimeout(() => {
           setHint(defaultHintMessage);

@@ -58,47 +58,44 @@ The display includes Git branch (if present), Unity version, project path, and l
 ## CLI Options
 
 - `--no-git-root-name`: Display Unity project titles instead of Git repository root folder names.
-- `--output-path-on-exit`: Output the last opened project path to stdout when exiting. Used for shell integration.
-- `--shell-init`: Output shell function for integration (bash/zsh, fish, or PowerShell syntax).
+- `--shell-init`: Install shell function for automatic `cd` integration (with confirmation prompt).
+- `--shell-init --dry-run`: Preview the shell function without installing.
 
 ## Shell Integration
 
 You can add a shell function to automatically `cd` to the project directory after opening Unity.
 
-Run the following command to add the function to your shell config:
+### Setup
 
+1. Install globally:
 ```bash
-# For zsh
-npx unity-hub-cli --shell-init >> ~/.zshrc
-
-# For bash
-npx unity-hub-cli --shell-init >> ~/.bashrc
-
-# For fish
-npx unity-hub-cli --shell-init >> ~/.config/fish/config.fish
-
-# For PowerShell
-npx unity-hub-cli --shell-init >> $PROFILE
+npm install -g unity-hub-cli
 ```
 
-Or manually add the following to your shell config:
-
+2. Run the shell init command (auto-detects your shell):
 ```bash
-unity-hub() {
-  local path
-  path=$(npx unity-hub-cli --output-path-on-exit)
-  if [ -n "$path" ]; then
-    cd "$path"
-  fi
-}
+unity-hub-cli --shell-init
 ```
 
-The function name can be anything you like (e.g., `unity-hub`, `uhub`, `uh`).
+This automatically adds the `unity-hub` function to your shell config file (`.zshrc`, `.bashrc`, `config.fish`, or PowerShell profile).
+
+3. Reload your shell:
+```bash
+source ~/.zshrc  # or restart your terminal
+```
+
+### Usage
 
 Now you can use `unity-hub` to:
 1. Browse and select Unity projects
 2. Press `o` to launch Unity
 3. Your terminal automatically `cd`s to the project directory
+
+### Notes
+
+- Running `--shell-init` multiple times is safe - it updates the existing function using marker comments
+- The function uses absolute paths detected from your environment
+- **Windows**: Shell integration supports PowerShell only. CMD is not supported because it lacks shell functions required for automatic `cd` after launching Unity
 
 ## Security
 

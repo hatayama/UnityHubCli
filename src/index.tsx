@@ -1,4 +1,9 @@
+import { execSync } from 'node:child_process';
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { homedir } from 'node:os';
+import { dirname, join } from 'node:path';
 import process from 'node:process';
+import { createInterface } from 'node:readline';
 
 import chalk from 'chalk';
 import { render } from 'ink';
@@ -22,25 +27,157 @@ import { UnityTempDirectoryCleaner } from './infrastructure/unityTemp.js';
 import { App } from './presentation/App.js';
 import { ThemeProvider } from './presentation/theme.js';
 
+const SHELL_INIT_MARKER_START = '# >>> unity-hub-cli >>>';
+const SHELL_INIT_MARKER_END = '# <<< unity-hub-cli <<<';
+
+const getShellConfigPath = (): string | undefined => {
+  const shell = process.env['SHELL'] ?? '';
+  const home = homedir();
+
+  if (shell.includes('zsh')) {
+    return join(home, '.zshrc');
+  }
+  if (shell.includes('bash')) {
+    const bashrcPath = join(home, '.bashrc');
+    const profilePath = join(home, '.bash_profile');
+    return existsSync(bashrcPath) ? bashrcPath : profilePath;
+  }
+  if (shell.includes('fish')) {
+    return join(home, '.config', 'fish', 'config.fish');
+  }
+  // Windows PowerShell (no $SHELL environment variable)
+  if (process.platform === 'win32') {
+    return join(home, 'Documents', 'WindowsPowerShell', 'Microsoft.PowerShell_profile.ps1');
+  }
+  return undefined;
+};
+
+const getShellInitScriptWithMarkers = (): string => {
+  const script = getShellInitScript();
+  return `${SHELL_INIT_MARKER_START}\n${script}\n${SHELL_INIT_MARKER_END}`;
+};
+
+const askConfirmation = (question: string): Promise<boolean> => {
+  const rl = createInterface({
+    input: process.stdin,
+    output: process.stdout,
+  });
+  return new Promise((resolve) => {
+    rl.question(question, (answer) => {
+      rl.close();
+      resolve(answer.toLowerCase() === 'y' || answer.toLowerCase() === 'yes');
+    });
+  });
+};
+
+const previewShellInit = (): void => {
+  const configPath = getShellConfigPath();
+  // eslint-disable-next-line no-console
+  console.log('=== Shell Integration Preview ===\n');
+  // eslint-disable-next-line no-console
+  console.log(`Target file: ${configPath ?? 'Unknown (unsupported shell)'}\n`);
+  // eslint-disable-next-line no-console
+  console.log('Content to be added:\n');
+  // eslint-disable-next-line no-console
+  console.log(getShellInitScriptWithMarkers());
+};
+
+const installShellInit = (): { success: boolean; message: string } => {
+  const configPath = getShellConfigPath();
+  if (!configPath) {
+    return { success: false, message: 'Unsupported shell. Please copy the function from the README into your shell config manually.' };
+  }
+
+  const scriptWithMarkers = getShellInitScriptWithMarkers();
+  const markerPattern = new RegExp(
+    `${SHELL_INIT_MARKER_START}[\\s\\S]*?${SHELL_INIT_MARKER_END}`,
+    'g',
+  );
+
+  let content = '';
+  if (existsSync(configPath)) {
+    content = readFileSync(configPath, 'utf-8');
+  }
+
+  const existingMatch = content.match(markerPattern);
+  if (existingMatch && existingMatch[0] === scriptWithMarkers) {
+    return { success: true, message: `Shell integration is already up to date in ${configPath}` };
+  }
+
+  let newContent: string;
+  let action: string;
+  if (existingMatch) {
+    newContent = content.replace(markerPattern, scriptWithMarkers);
+    action = 'updated';
+  } else {
+    newContent = content.trimEnd() + '\n\n' + scriptWithMarkers + '\n';
+    action = 'installed';
+  }
+
+  mkdirSync(dirname(configPath), { recursive: true });
+  writeFileSync(configPath, newContent, 'utf-8');
+  return { success: true, message: `Shell integration ${action} in ${configPath}` };
+};
+
+const getNodePath = (): string => {
+  const isWindows = process.platform === 'win32';
+  const command = isWindows ? 'where node' : 'which node';
+  try {
+    const result = execSync(command, { encoding: 'utf-8' }).trim().split('\n')[0];
+    if (result && existsSync(result)) {
+      return result;
+    }
+  } catch {
+    // Fall through to default
+  }
+  return 'node';
+};
+
+const getUnityHubCliPath = (): string => {
+  const isWindows = process.platform === 'win32';
+  try {
+    const prefix = execSync('npm config get prefix', { encoding: 'utf-8' }).trim();
+    const binDir = isWindows ? prefix : `${prefix}/bin`;
+    const cliPath = isWindows ? `${binDir}/unity-hub-cli.cmd` : `${binDir}/unity-hub-cli`;
+    if (existsSync(cliPath)) {
+      return cliPath;
+    }
+  } catch {
+    // Fall through to default
+  }
+  return 'unity-hub-cli';
+};
+
+// Uses temp file instead of command substitution $() to avoid subshell issues:
+// 1. $() creates a non-interactive subshell where PATH may not be properly inherited
+// 2. TUI rendering fails when stdout is captured by command substitution
+// With temp file: stdout (path) goes to file, stderr (TUI) goes to terminal
 const getShellInitScript = (): string => {
   const shell = process.env['SHELL'] ?? '';
   const isWindows = process.platform === 'win32';
+  const nodePath = getNodePath();
+  const cliPath = getUnityHubCliPath();
 
   if (shell.includes('fish')) {
     return `function unity-hub
-  set -l path (npx unity-hub-cli --output-path-on-exit)
-  if test -n "$path"
-    cd $path
+  set -l tmpfile (mktemp)
+  ${nodePath} ${cliPath} --output-path-on-exit > $tmpfile
+  set -l dir (cat $tmpfile)
+  rm -f $tmpfile
+  if test -n "$dir"
+    cd $dir
   end
 end`;
   }
 
   if (shell.includes('bash') || shell.includes('zsh')) {
     return `unity-hub() {
-  local path
-  path=$(npx unity-hub-cli --output-path-on-exit)
-  if [ -n "$path" ]; then
-    cd "$path"
+  local tmpfile=$(mktemp)
+  ${nodePath} ${cliPath} --output-path-on-exit >| "$tmpfile"
+  local dir=$(cat "$tmpfile")
+  rm -f "$tmpfile"
+  if [ -n "$dir" ]; then
+    cd "$dir"
   fi
 }`;
   }
@@ -48,19 +185,24 @@ end`;
   // Windows PowerShell (no $SHELL set)
   if (isWindows) {
     return `function unity-hub {
-  $path = npx unity-hub-cli --output-path-on-exit
-  if ($path) {
-    Set-Location $path
+  $tmpfile = [System.IO.Path]::GetTempFileName()
+  & "${cliPath}" --output-path-on-exit > $tmpfile
+  $dir = Get-Content $tmpfile
+  Remove-Item $tmpfile
+  if ($dir) {
+    Set-Location $dir
   }
 }`;
   }
 
   // Default: bash/zsh compatible
   return `unity-hub() {
-  local path
-  path=$(npx unity-hub-cli --output-path-on-exit)
-  if [ -n "$path" ]; then
-    cd "$path"
+  local tmpfile=$(mktemp)
+  ${nodePath} ${cliPath} --output-path-on-exit >| "$tmpfile"
+  local dir=$(cat "$tmpfile")
+  rm -f "$tmpfile"
+  if [ -n "$dir" ]; then
+    cd "$dir"
   fi
 }`;
 };
@@ -69,8 +211,38 @@ const bootstrap = async (): Promise<void> => {
   const args = process.argv.slice(2);
 
   if (args.includes('--shell-init')) {
-    process.stdout.write(getShellInitScript());
-    process.stdout.write('\n');
+    const isDryRun = args.includes('--dry-run');
+
+    if (isDryRun) {
+      previewShellInit();
+      return;
+    }
+
+    const configPath = getShellConfigPath();
+    if (!configPath) {
+      // eslint-disable-next-line no-console
+      console.log('Unsupported shell. Please copy the function from the README into your shell config manually.');
+      process.exitCode = 1;
+      return;
+    }
+
+    // eslint-disable-next-line no-console
+    console.log(`This will install the unity-hub function to: ${configPath}\n`);
+    previewShellInit();
+    // eslint-disable-next-line no-console
+    console.log('');
+
+    const confirmed = await askConfirmation('Proceed with installation? (y/n): ');
+    if (!confirmed) {
+      // eslint-disable-next-line no-console
+      console.log('Installation cancelled.');
+      return;
+    }
+
+    const result = installShellInit();
+    // eslint-disable-next-line no-console
+    console.log(result.message);
+    process.exitCode = result.success ? 0 : 1;
     return;
   }
 
