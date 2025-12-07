@@ -1,5 +1,19 @@
 # Changelog
 
+## [0.18.0](https://github.com/hatayama/UnityHubCli/compare/unity-hub-cli-v0.17.0...unity-hub-cli-v0.18.0) (2025-12-07)
+
+
+### Features
+
+* add OSV-Scanner and @lavamoat/allow-scripts for enhanced security ([#65](https://github.com/hatayama/UnityHubCli/issues/65)) ([68ddd03](https://github.com/hatayama/UnityHubCli/commit/68ddd03845a4dd1594896dfab60f024eafbfc5eb))
+* add shell integration for automatic cd after launching Unity ([#63](https://github.com/hatayama/UnityHubCli/issues/63)) ([dbfd6dd](https://github.com/hatayama/UnityHubCli/commit/dbfd6dd8d67ddb9e8d7e8f684fbccf8e4d19b6e3))
+* improve shell integration with auto-install and robust path handling ([#66](https://github.com/hatayama/UnityHubCli/issues/66)) ([ab9f681](https://github.com/hatayama/UnityHubCli/commit/ab9f681a134f43c6ddc7c01d74e074236859e2c7))
+
+
+### Bug Fixes
+
+* migrate ESLint to v9 flat config format ([#67](https://github.com/hatayama/UnityHubCli/issues/67)) ([044eeb9](https://github.com/hatayama/UnityHubCli/commit/044eeb9dc1c037637fe687582029e5c92f344b9e))
+
 ## [0.17.0](https://github.com/hatayama/UnityHubCli/compare/unity-hub-cli-v0.16.0...unity-hub-cli-v0.17.0) (2025-12-02)
 
 
