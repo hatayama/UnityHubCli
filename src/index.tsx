@@ -118,15 +118,30 @@ const installShellInit = (): { success: boolean; message: string } => {
 const getNodePath = (): string => {
   const isWindows = process.platform === 'win32';
   const command = isWindows ? 'where node' : 'which node';
-  return execSync(command, { encoding: 'utf-8' }).trim().split('\n')[0] ?? 'node';
+  try {
+    const result = execSync(command, { encoding: 'utf-8' }).trim().split('\n')[0];
+    if (result && existsSync(result)) {
+      return result;
+    }
+  } catch {
+    // Fall through to default
+  }
+  return 'node';
 };
 
 const getUnityHubCliPath = (): string => {
   const isWindows = process.platform === 'win32';
-  // npm prefix returns the global prefix directory
-  const prefix = execSync('npm config get prefix', { encoding: 'utf-8' }).trim();
-  const binDir = isWindows ? prefix : `${prefix}/bin`;
-  return `${binDir}/unity-hub-cli`;
+  try {
+    const prefix = execSync('npm config get prefix', { encoding: 'utf-8' }).trim();
+    const binDir = isWindows ? prefix : `${prefix}/bin`;
+    const cliPath = isWindows ? `${binDir}/unity-hub-cli.cmd` : `${binDir}/unity-hub-cli`;
+    if (existsSync(cliPath)) {
+      return cliPath;
+    }
+  } catch {
+    // Fall through to default
+  }
+  return 'unity-hub-cli';
 };
 
 // Uses temp file instead of command substitution $() to avoid subshell issues:
