@@ -23,24 +23,30 @@ import { UnityTempDirectoryCleaner } from './infrastructure/unityTemp.js';
 import { App } from './presentation/App.js';
 import { ThemeProvider } from './presentation/theme.js';
 
-const getNodeBinDir = (): string => {
+const getNodePath = (): string => {
   const isWindows = process.platform === 'win32';
   const command = isWindows ? 'where node' : 'which node';
-  const nodePath = execSync(command, { encoding: 'utf-8' }).trim().split('\n')[0];
-  // Get directory containing node (e.g., /usr/local/bin)
-  const binDir = nodePath?.replace(/[/\\][^/\\]+$/, '') ?? '';
-  return binDir;
+  return execSync(command, { encoding: 'utf-8' }).trim().split('\n')[0] ?? 'node';
+};
+
+const getUnityHubCliPath = (): string => {
+  const isWindows = process.platform === 'win32';
+  // npm prefix returns the global prefix directory
+  const prefix = execSync('npm config get prefix', { encoding: 'utf-8' }).trim();
+  const binDir = isWindows ? prefix : `${prefix}/bin`;
+  return `${binDir}/unity-hub-cli`;
 };
 
 const getShellInitScript = (): string => {
   const shell = process.env['SHELL'] ?? '';
   const isWindows = process.platform === 'win32';
-  const nodeBinDir = getNodeBinDir();
+  const nodePath = getNodePath();
+  const cliPath = getUnityHubCliPath();
 
   if (shell.includes('fish')) {
     return `function unity-hub
   set -l tmpfile (mktemp)
-  PATH="${nodeBinDir}:$PATH" npx unity-hub-cli --output-path-on-exit > $tmpfile
+  ${nodePath} ${cliPath} --output-path-on-exit > $tmpfile
   set -l dir (cat $tmpfile)
   rm -f $tmpfile
   if test -n "$dir"
@@ -52,7 +58,7 @@ end`;
   if (shell.includes('bash') || shell.includes('zsh')) {
     return `unity-hub() {
   local tmpfile=$(mktemp)
-  PATH="${nodeBinDir}:$PATH" npx unity-hub-cli --output-path-on-exit >| "$tmpfile"
+  ${nodePath} ${cliPath} --output-path-on-exit >| "$tmpfile"
   local dir=$(cat "$tmpfile")
   rm -f "$tmpfile"
   if [ -n "$dir" ]; then
@@ -64,9 +70,8 @@ end`;
   // Windows PowerShell (no $SHELL set)
   if (isWindows) {
     return `function unity-hub {
-  $env:Path = "${nodeBinDir};" + $env:Path
   $tmpfile = [System.IO.Path]::GetTempFileName()
-  npx unity-hub-cli --output-path-on-exit > $tmpfile
+  & "${nodePath}" "${cliPath}" --output-path-on-exit > $tmpfile
   $dir = Get-Content $tmpfile
   Remove-Item $tmpfile
   if ($dir) {
@@ -78,7 +83,7 @@ end`;
   // Default: bash/zsh compatible
   return `unity-hub() {
   local tmpfile=$(mktemp)
-  PATH="${nodeBinDir}:$PATH" npx unity-hub-cli --output-path-on-exit >| "$tmpfile"
+  ${nodePath} ${cliPath} --output-path-on-exit >| "$tmpfile"
   local dir=$(cat "$tmpfile")
   rm -f "$tmpfile"
   if [ -n "$dir" ]; then
