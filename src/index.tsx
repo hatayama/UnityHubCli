@@ -1,4 +1,7 @@
 import { execSync } from 'node:child_process';
+import { existsSync, readFileSync, writeFileSync } from 'node:fs';
+import { homedir } from 'node:os';
+import { join } from 'node:path';
 import process from 'node:process';
 
 import chalk from 'chalk';
@@ -22,6 +25,59 @@ import { WinUnityProcessReader, WinUnityProcessTerminator } from './infrastructu
 import { UnityTempDirectoryCleaner } from './infrastructure/unityTemp.js';
 import { App } from './presentation/App.js';
 import { ThemeProvider } from './presentation/theme.js';
+
+const SHELL_INIT_MARKER_START = '# >>> unity-hub-cli >>>';
+const SHELL_INIT_MARKER_END = '# <<< unity-hub-cli <<<';
+
+const getShellConfigPath = (): string | undefined => {
+  const shell = process.env['SHELL'] ?? '';
+  const home = homedir();
+
+  if (shell.includes('zsh')) {
+    return join(home, '.zshrc');
+  }
+  if (shell.includes('bash')) {
+    const bashrcPath = join(home, '.bashrc');
+    const profilePath = join(home, '.bash_profile');
+    return existsSync(bashrcPath) ? bashrcPath : profilePath;
+  }
+  if (shell.includes('fish')) {
+    return join(home, '.config', 'fish', 'config.fish');
+  }
+  return undefined;
+};
+
+const getShellInitScriptWithMarkers = (): string => {
+  const script = getShellInitScript();
+  return `${SHELL_INIT_MARKER_START}\n${script}\n${SHELL_INIT_MARKER_END}`;
+};
+
+const installShellInit = (): { success: boolean; message: string } => {
+  const configPath = getShellConfigPath();
+  if (!configPath) {
+    return { success: false, message: 'Unsupported shell. Please add the function manually using --shell-init.' };
+  }
+
+  const scriptWithMarkers = getShellInitScriptWithMarkers();
+  const markerPattern = new RegExp(
+    `${SHELL_INIT_MARKER_START}[\\s\\S]*?${SHELL_INIT_MARKER_END}`,
+    'g',
+  );
+
+  let content = '';
+  if (existsSync(configPath)) {
+    content = readFileSync(configPath, 'utf-8');
+  }
+
+  if (markerPattern.test(content)) {
+    content = content.replace(markerPattern, scriptWithMarkers);
+  } else {
+    content = content.trimEnd() + '\n\n' + scriptWithMarkers + '\n';
+  }
+
+  writeFileSync(configPath, content, 'utf-8');
+  return { success: true, message: `Shell integration installed to ${configPath}` };
+};
 
 const getNodePath = (): string => {
   const isWindows = process.platform === 'win32';
@@ -96,8 +152,10 @@ const bootstrap = async (): Promise<void> => {
   const args = process.argv.slice(2);
 
   if (args.includes('--shell-init')) {
-    process.stdout.write(getShellInitScript());
-    process.stdout.write('\n');
+    const result = installShellInit();
+    // eslint-disable-next-line no-console
+    console.log(result.message);
+    process.exitCode = result.success ? 0 : 1;
     return;
   }
 
