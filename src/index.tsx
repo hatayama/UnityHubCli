@@ -3,6 +3,7 @@ import { existsSync, readFileSync, writeFileSync } from 'node:fs';
 import { homedir } from 'node:os';
 import { join } from 'node:path';
 import process from 'node:process';
+import { createInterface } from 'node:readline';
 
 import chalk from 'chalk';
 import { render } from 'ink';
@@ -52,10 +53,35 @@ const getShellInitScriptWithMarkers = (): string => {
   return `${SHELL_INIT_MARKER_START}\n${script}\n${SHELL_INIT_MARKER_END}`;
 };
 
+const askConfirmation = (question: string): Promise<boolean> => {
+  const rl = createInterface({
+    input: process.stdin,
+    output: process.stdout,
+  });
+  return new Promise((resolve) => {
+    rl.question(question, (answer) => {
+      rl.close();
+      resolve(answer.toLowerCase() === 'y' || answer.toLowerCase() === 'yes');
+    });
+  });
+};
+
+const previewShellInit = (): void => {
+  const configPath = getShellConfigPath();
+  // eslint-disable-next-line no-console
+  console.log('=== Shell Integration Preview ===\n');
+  // eslint-disable-next-line no-console
+  console.log(`Target file: ${configPath ?? 'Unknown (unsupported shell)'}\n`);
+  // eslint-disable-next-line no-console
+  console.log('Content to be added:\n');
+  // eslint-disable-next-line no-console
+  console.log(getShellInitScriptWithMarkers());
+};
+
 const installShellInit = (): { success: boolean; message: string } => {
   const configPath = getShellConfigPath();
   if (!configPath) {
-    return { success: false, message: 'Unsupported shell. Please add the function manually using --shell-init.' };
+    return { success: false, message: 'Unsupported shell. Use --shell-init --dry-run to see the function and add it manually.' };
   }
 
   const scriptWithMarkers = getShellInitScriptWithMarkers();
@@ -69,14 +95,23 @@ const installShellInit = (): { success: boolean; message: string } => {
     content = readFileSync(configPath, 'utf-8');
   }
 
-  if (markerPattern.test(content)) {
-    content = content.replace(markerPattern, scriptWithMarkers);
-  } else {
-    content = content.trimEnd() + '\n\n' + scriptWithMarkers + '\n';
+  const existingMatch = content.match(markerPattern);
+  if (existingMatch && existingMatch[0] === scriptWithMarkers) {
+    return { success: true, message: `Shell integration is already up to date in ${configPath}` };
   }
 
-  writeFileSync(configPath, content, 'utf-8');
-  return { success: true, message: `Shell integration installed to ${configPath}` };
+  let newContent: string;
+  let action: string;
+  if (existingMatch) {
+    newContent = content.replace(markerPattern, scriptWithMarkers);
+    action = 'updated';
+  } else {
+    newContent = content.trimEnd() + '\n\n' + scriptWithMarkers + '\n';
+    action = 'installed';
+  }
+
+  writeFileSync(configPath, newContent, 'utf-8');
+  return { success: true, message: `Shell integration ${action} in ${configPath}` };
 };
 
 const getNodePath = (): string => {
@@ -156,6 +191,34 @@ const bootstrap = async (): Promise<void> => {
   const args = process.argv.slice(2);
 
   if (args.includes('--shell-init')) {
+    const isDryRun = args.includes('--dry-run');
+
+    if (isDryRun) {
+      previewShellInit();
+      return;
+    }
+
+    const configPath = getShellConfigPath();
+    if (!configPath) {
+      // eslint-disable-next-line no-console
+      console.log('Unsupported shell. Use --shell-init --dry-run to see the function and add it manually.');
+      process.exitCode = 1;
+      return;
+    }
+
+    // eslint-disable-next-line no-console
+    console.log(`This will install the unity-hub function to: ${configPath}\n`);
+    previewShellInit();
+    // eslint-disable-next-line no-console
+    console.log('');
+
+    const confirmed = await askConfirmation('Proceed with installation? (y/n): ');
+    if (!confirmed) {
+      // eslint-disable-next-line no-console
+      console.log('Installation cancelled.');
+      return;
+    }
+
     const result = installShellInit();
     // eslint-disable-next-line no-console
     console.log(result.message);

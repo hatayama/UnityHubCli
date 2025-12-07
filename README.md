@@ -58,7 +58,8 @@ The display includes Git branch (if present), Unity version, project path, and l
 ## CLI Options
 
 - `--no-git-root-name`: Display Unity project titles instead of Git repository root folder names.
-- `--shell-init`: Install shell function for automatic `cd` integration.
+- `--shell-init`: Install shell function for automatic `cd` integration (with confirmation prompt).
+- `--shell-init --dry-run`: Preview the shell function without installing.
 
 ## Shell Integration
 
