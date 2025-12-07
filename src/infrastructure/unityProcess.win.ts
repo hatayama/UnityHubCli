@@ -172,7 +172,7 @@ export class WinUnityProcessTerminator implements IUnityProcessTerminator {
         ],
         { env: getMsysDisabledEnv() },
       );
-    } catch (error) {
+    } catch {
       if (!ensureProcessAlive(unityProcess.pid)) {
         return { terminated: true, stage: 'sigterm' };
       }
@@ -202,7 +202,7 @@ export class WinUnityProcessTerminator implements IUnityProcessTerminator {
         ],
         { env: getMsysDisabledEnv() },
       );
-    } catch (error) {
+    } catch {
       if (!ensureProcessAlive(unityProcess.pid)) {
         return { terminated: true, stage: 'sigkill' };
       }

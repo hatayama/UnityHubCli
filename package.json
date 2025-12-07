@@ -8,8 +8,8 @@
     "dev": "tsx src/index.ts",
     "build": "tsup",
     "start": "node dist/index.js",
-    "lint": "eslint . --ext .ts,.tsx",
-    "lint:fix": "eslint . --ext .ts,.tsx --fix",
+    "lint": "eslint .",
+    "lint:fix": "eslint . --fix",
     "format": "prettier --write .",
     "typecheck": "tsc -noEmit",
     "allow-scripts": "allow-scripts"
@@ -54,6 +54,7 @@
     }
   },
   "devDependencies": {
+    "@eslint/js": "^9.39.1",
     "@lavamoat/allow-scripts": "3.4.1",
     "@types/node": "24.10.1",
     "@types/react": "19.2.7",
@@ -67,6 +68,7 @@
     "tsup": "8.5.1",
     "tsx": "4.21.0",
     "typescript": "5.9.3",
+    "typescript-eslint": "^8.48.1",
     "vitest": "4.0.15"
   }
 }

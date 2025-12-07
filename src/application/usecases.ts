@@ -136,7 +136,7 @@ export class TerminateProjectUseCase {
         await this.unityTempDirectoryCleaner.clean(project.path);
       } catch (error) {
         const message = error instanceof Error ? error.message : String(error);
-        // eslint-disable-next-line no-console
+         
         console.error(`Failed to clean Temp directory after termination: ${message}`);
       }
     }
