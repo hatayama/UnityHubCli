@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.19.0](https://github.com/hatayama/UnityHubCli/compare/unity-hub-cli-v0.18.0...unity-hub-cli-v0.19.0) (2025-12-08)
+
+
+### Features
+
+* add -v/--version flag to display version information ([#71](https://github.com/hatayama/UnityHubCli/issues/71)) ([919aaa9](https://github.com/hatayama/UnityHubCli/commit/919aaa900f90a47a2a66a796aeef05cefbd6289a))
+* display favorite marker and toggle with 'f' key ([#69](https://github.com/hatayama/UnityHubCli/issues/69)) ([b7aabdb](https://github.com/hatayama/UnityHubCli/commit/b7aabdb06e0ed9b85e3278e8cbd7f7ad13175cfb))
+
 ## [0.18.0](https://github.com/hatayama/UnityHubCli/compare/unity-hub-cli-v0.17.0...unity-hub-cli-v0.18.0) (2025-12-07)
 
 
