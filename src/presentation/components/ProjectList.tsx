@@ -165,7 +165,8 @@ export const ProjectList: React.FC<ProjectListProps> = ({
       const rowIndex = startIndex + offset;
       const isSelected = rowIndex === selectedIndex;
       const selectionBar: string = isSelected ? '┃' : ' ';
-      const projectName: string = formatProjectName(project.title, repository, useGitRootName);
+      const baseName: string = formatProjectName(project.title, repository, useGitRootName);
+      const projectName: string = project.favorite ? `⭑ ${baseName}` : baseName;
       const versionLabel: string = `(${project.version.value})`;
       const updatedText: string | undefined = formatUpdatedText(project.lastModified);
       const pathLine: string = shortenHomePath(project.path);

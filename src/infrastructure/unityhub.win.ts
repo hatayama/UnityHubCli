@@ -142,6 +142,45 @@ export class WinUnityHubProjectsReader implements IUnityHubProjectsReader, IUnit
     await writeFile(HUB_PROJECTS_PATH, JSON.stringify(json, undefined, 2), 'utf8');
   }
 
+  async toggleFavorite(projectPath: string): Promise<boolean> {
+    let content: string;
+    try {
+      content = await readFile(HUB_PROJECTS_PATH, 'utf8');
+    } catch {
+      throw new Error(`Unity Hub project list not found (${HUB_PROJECTS_PATH}).`);
+    }
+
+    let json: UnityHubProjectsJson;
+    try {
+      json = JSON.parse(content) as UnityHubProjectsJson;
+    } catch {
+      throw new Error('Unable to read the Unity Hub project list (permissions/format error).');
+    }
+
+    if (!json.data) {
+      return false;
+    }
+
+    const projectKey = Object.keys(json.data).find((key) => json.data?.[key]?.path === projectPath);
+    if (!projectKey) {
+      return false;
+    }
+
+    const original = json.data[projectKey];
+    if (!original) {
+      return false;
+    }
+
+    const newFavorite: boolean = original.isFavorite !== true;
+    json.data[projectKey] = {
+      ...original,
+      isFavorite: newFavorite,
+    };
+
+    await writeFile(HUB_PROJECTS_PATH, JSON.stringify(json, undefined, 2), 'utf8');
+    return newFavorite;
+  }
+
   async readCliArgs(projectPath: string): Promise<readonly string[]> {
     const infoPath = join(HUB_DIR, 'projectsInfo.json');
 

@@ -3,6 +3,7 @@ import type { EditorVersion, GitRepositoryInfo, UnityProcess, UnityProject } fro
 export interface IUnityHubProjectsReader {
   listProjects(): Promise<UnityProject[]>;
   updateLastModified(projectPath: string, date: Date): Promise<void>;
+  toggleFavorite(projectPath: string): Promise<boolean>;
 }
 
 export interface IGitRepositoryInfoReader {

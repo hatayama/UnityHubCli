@@ -336,6 +336,7 @@ const bootstrap = async (): Promise<void> => {
           onLaunchEditorOnly={(project) => launchEditorOnlyUseCase.execute(project)}
           onTerminate={(project) => terminateProjectUseCase.execute(project)}
           onRefresh={() => listProjectsUseCase.execute()}
+          onToggleFavorite={(project) => unityHubReader.toggleFavorite(project.path)}
           useGitRootName={useGitRootName}
           outputPathOnExit={outputPathOnExit}
           onSetExitPath={(path) => {
