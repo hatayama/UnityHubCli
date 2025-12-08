@@ -587,20 +587,28 @@ export const App: React.FC<AppProps> = ({
     }
 
     const { project } = projectView;
-    const newFavorite: boolean = await onToggleFavorite(project);
-    setProjectViews((prev) =>
-      prev.map((pv) =>
-        pv.project.id === project.id
-          ? { ...pv, project: { ...pv.project, favorite: newFavorite } }
-          : pv,
-      ),
-    );
+    try {
+      const newFavorite: boolean = await onToggleFavorite(project);
+      setProjectViews((prev) =>
+        prev.map((pv) =>
+          pv.project.id === project.id
+            ? { ...pv, project: { ...pv.project, favorite: newFavorite } }
+            : pv,
+        ),
+      );
 
-    const status: string = newFavorite ? 'added to' : 'removed from';
-    setHint(`${project.title} ${status} favorites`);
-    setTimeout(() => {
-      setHint(defaultHintMessage);
-    }, 2000);
+      const status: string = newFavorite ? 'added to' : 'removed from';
+      setHint(`${project.title} ${status} favorites`);
+      setTimeout(() => {
+        setHint(defaultHintMessage);
+      }, 2000);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      setHint(`Failed to toggle favorite: ${message}`);
+      setTimeout(() => {
+        setHint(defaultHintMessage);
+      }, 3000);
+    }
   }, [index, onToggleFavorite, sortedProjects]);
 
   useInput((input, key) => {
