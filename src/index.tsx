@@ -4,6 +4,7 @@ import { homedir } from 'node:os';
 import { dirname, join } from 'node:path';
 import process from 'node:process';
 import { createInterface } from 'node:readline';
+import { fileURLToPath } from 'node:url';
 
 import chalk from 'chalk';
 import { render } from 'ink';
@@ -29,6 +30,13 @@ import { ThemeProvider } from './presentation/theme.js';
 
 const SHELL_INIT_MARKER_START = '# >>> unity-hub-cli >>>';
 const SHELL_INIT_MARKER_END = '# <<< unity-hub-cli <<<';
+
+const getVersion = (): string => {
+  const currentDir = dirname(fileURLToPath(import.meta.url));
+  const packageJsonPath = join(currentDir, '..', 'package.json');
+  const packageJson = JSON.parse(readFileSync(packageJsonPath, 'utf-8')) as { version: string };
+  return packageJson.version;
+};
 
 const getShellConfigPath = (): string | undefined => {
   const shell = process.env['SHELL'] ?? '';
@@ -209,6 +217,12 @@ end`;
 
 const bootstrap = async (): Promise<void> => {
   const args = process.argv.slice(2);
+
+  if (args.includes('-v') || args.includes('--version')) {
+    // eslint-disable-next-line no-console
+    console.log(getVersion());
+    return;
+  }
 
   if (args.includes('--shell-init')) {
     const isDryRun = args.includes('--dry-run');
