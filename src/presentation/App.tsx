@@ -33,7 +33,7 @@ const extractRootFolder = (repository?: GitRepositoryInfo): string | undefined =
 
 const minimumVisibleProjectCount: number = 4;
 const defaultHintMessage =
-  `j/k Select · [o]pen [O]+Editor [i]de [q]uit [r]efresh [c]opy [s]ort [v]isibility · ^C Exit`;
+  `j/k Select · [o]pen [O]+Editor [i]de [q]uit [r]efresh [c]opy [f]av [s]ort [v]isibility · ^C Exit`;
  
 
  
@@ -51,6 +51,7 @@ type AppProps = {
   readonly onLaunchEditorOnly?: (project: UnityProject) => Promise<LaunchEditorOnlyResult>;
   readonly onTerminate: (project: UnityProject) => Promise<TerminateResult>;
   readonly onRefresh?: () => Promise<ProjectView[]>;
+  readonly onToggleFavorite?: (project: UnityProject) => Promise<boolean>;
   readonly useGitRootName?: boolean;
   readonly outputPathOnExit?: boolean;
   readonly onSetExitPath?: (path: string) => void;
@@ -63,6 +64,7 @@ export const App: React.FC<AppProps> = ({
   onLaunchEditorOnly,
   onTerminate,
   onRefresh,
+  onToggleFavorite,
   useGitRootName = true,
   outputPathOnExit = false,
   onSetExitPath,
@@ -566,6 +568,41 @@ export const App: React.FC<AppProps> = ({
     }
   }, [isRefreshing, onRefresh, sortedProjects]);
 
+  const toggleFavoriteSelected = useCallback(async () => {
+    if (!onToggleFavorite) {
+      setHint('Toggle favorite not available');
+      setTimeout(() => {
+        setHint(defaultHintMessage);
+      }, 2000);
+      return;
+    }
+
+    const projectView = sortedProjects[index];
+    if (!projectView) {
+      setHint('No project to toggle favorite');
+      setTimeout(() => {
+        setHint(defaultHintMessage);
+      }, 2000);
+      return;
+    }
+
+    const { project } = projectView;
+    const newFavorite: boolean = await onToggleFavorite(project);
+    setProjectViews((prev) =>
+      prev.map((pv) =>
+        pv.project.id === project.id
+          ? { ...pv, project: { ...pv.project, favorite: newFavorite } }
+          : pv,
+      ),
+    );
+
+    const status: string = newFavorite ? 'added to' : 'removed from';
+    setHint(`${project.title} ${status} favorites`);
+    setTimeout(() => {
+      setHint(defaultHintMessage);
+    }, 2000);
+  }, [index, onToggleFavorite, sortedProjects]);
+
   useInput((input, key) => {
     if (isSortMenuOpen) {
       if (key.escape || input === '\u001b') {
@@ -703,6 +740,11 @@ export const App: React.FC<AppProps> = ({
 
     if (input === 'c') {
       copyProjectPath();
+      return;
+    }
+
+    if (input === 'f' || input === 'F') {
+      void toggleFavoriteSelected();
     }
   });
 
