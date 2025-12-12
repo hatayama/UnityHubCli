@@ -1,4 +1,4 @@
-import { execSync } from 'node:child_process';
+import { execSync, spawnSync } from 'node:child_process';
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { homedir } from 'node:os';
 import { dirname, join } from 'node:path';
@@ -80,13 +80,9 @@ const askConfirmation = (question: string): Promise<boolean> => {
 
 const previewShellInit = (): void => {
   const configPath = getShellConfigPath();
-  // eslint-disable-next-line no-console
   console.log('=== Shell Integration Preview ===\n');
-  // eslint-disable-next-line no-console
   console.log(`Target file: ${configPath ?? 'Unknown (unsupported shell)'}\n`);
-  // eslint-disable-next-line no-console
   console.log('Content to be added:\n');
-  // eslint-disable-next-line no-console
   console.log(getShellInitScriptWithMarkers());
 };
 
@@ -156,6 +152,173 @@ const getUnityHubCliPath = (): string => {
   return 'unity-hub-cli';
 };
 
+const getNpmCommand = (): string => {
+  return process.platform === 'win32' ? 'npm.cmd' : 'npm';
+};
+
+const NPM_VIEW_TIMEOUT_MS = 30_000;
+const NPM_INSTALL_TIMEOUT_MS = 10 * 60_000;
+
+type SemverIdentifier = number | string;
+type ParsedSemver = {
+  readonly major: number;
+  readonly minor: number;
+  readonly patch: number;
+  readonly prerelease: readonly SemverIdentifier[];
+};
+
+const parseSemver = (version: string): ParsedSemver | undefined => {
+  const trimmed = version.trim().replace(/^v/i, '');
+  const match = /^(\d+)\.(\d+)\.(\d+)(?:-([0-9A-Za-z.-]+))?(?:\+([0-9A-Za-z.-]+))?$/.exec(trimmed);
+  if (!match) {
+    return undefined;
+  }
+
+  const major = Number(match[1]);
+  const minor = Number(match[2]);
+  const patch = Number(match[3]);
+  if (!Number.isFinite(major) || !Number.isFinite(minor) || !Number.isFinite(patch)) {
+    return undefined;
+  }
+
+  const prereleaseRaw = match[4];
+  const prerelease: SemverIdentifier[] = prereleaseRaw
+    ? prereleaseRaw.split('.').map((identifier) => {
+        const numeric = /^[0-9]+$/.test(identifier) ? Number(identifier) : undefined;
+        return typeof numeric === 'number' && Number.isFinite(numeric) ? numeric : identifier;
+      })
+    : [];
+
+  return { major, minor, patch, prerelease };
+};
+
+const compareSemverIdentifiers = (a: SemverIdentifier, b: SemverIdentifier): number => {
+  if (typeof a === 'number' && typeof b === 'number') {
+    return a === b ? 0 : a < b ? -1 : 1;
+  }
+  if (typeof a === 'number' && typeof b === 'string') {
+    return -1;
+  }
+  if (typeof a === 'string' && typeof b === 'number') {
+    return 1;
+  }
+  const aStr = String(a);
+  const bStr = String(b);
+  if (aStr === bStr) {
+    return 0;
+  }
+  return aStr < bStr ? -1 : 1;
+};
+
+const compareSemver = (a: ParsedSemver, b: ParsedSemver): number => {
+  if (a.major !== b.major) {
+    return a.major < b.major ? -1 : 1;
+  }
+  if (a.minor !== b.minor) {
+    return a.minor < b.minor ? -1 : 1;
+  }
+  if (a.patch !== b.patch) {
+    return a.patch < b.patch ? -1 : 1;
+  }
+
+  const aHasPre = a.prerelease.length > 0;
+  const bHasPre = b.prerelease.length > 0;
+  if (!aHasPre && !bHasPre) {
+    return 0;
+  }
+  if (!aHasPre && bHasPre) {
+    return 1;
+  }
+  if (aHasPre && !bHasPre) {
+    return -1;
+  }
+
+  const length = Math.max(a.prerelease.length, b.prerelease.length);
+  for (let i = 0; i < length; i += 1) {
+    const aId = a.prerelease[i];
+    const bId = b.prerelease[i];
+    if (aId === undefined && bId === undefined) {
+      return 0;
+    }
+    if (aId === undefined) {
+      return -1;
+    }
+    if (bId === undefined) {
+      return 1;
+    }
+    const cmp = compareSemverIdentifiers(aId, bId);
+    if (cmp !== 0) {
+      return cmp;
+    }
+  }
+  return 0;
+};
+
+type NpmViewLatestVersionResult =
+  | { readonly ok: true; readonly version: string }
+  | { readonly ok: false; readonly reason: 'timeout' | 'spawn_failed' | 'nonzero_exit' | 'empty_output' };
+
+const readLatestVersionFromNpm = (): NpmViewLatestVersionResult => {
+  const npmCommand = getNpmCommand();
+  const result = spawnSync(npmCommand, ['view', 'unity-hub-cli', 'version'], {
+    encoding: 'utf-8',
+    stdio: ['ignore', 'pipe', 'pipe'],
+    timeout: NPM_VIEW_TIMEOUT_MS,
+  });
+
+  if (result.signal) {
+    return { ok: false, reason: 'timeout' };
+  }
+
+  if (result.error) {
+    const errorCode = (result.error as NodeJS.ErrnoException).code;
+    if (errorCode === 'ETIMEDOUT') {
+      return { ok: false, reason: 'timeout' };
+    }
+    return { ok: false, reason: 'spawn_failed' };
+  }
+  if (typeof result.status === 'number' && result.status !== 0) {
+    return { ok: false, reason: 'nonzero_exit' };
+  }
+
+  const version = result.stdout.trim();
+  if (!version) {
+    return { ok: false, reason: 'empty_output' };
+  }
+  return { ok: true, version };
+};
+
+type NpmInstallLatestResult =
+  | { readonly ok: true }
+  | { readonly ok: false; readonly reason: 'timeout' | 'spawn_failed' | 'nonzero_exit' };
+
+const installLatestVersionGlobally = (): NpmInstallLatestResult => {
+  const npmCommand = getNpmCommand();
+  const result = spawnSync(
+    npmCommand,
+    ['install', '-g', 'unity-hub-cli@latest', '--ignore-scripts', '--no-fund'],
+    {
+      stdio: 'inherit',
+      timeout: NPM_INSTALL_TIMEOUT_MS,
+    },
+  );
+
+  if (result.signal) {
+    return { ok: false, reason: 'timeout' };
+  }
+  if (result.error) {
+    const errorCode = (result.error as NodeJS.ErrnoException).code;
+    if (errorCode === 'ETIMEDOUT') {
+      return { ok: false, reason: 'timeout' };
+    }
+    return { ok: false, reason: 'spawn_failed' };
+  }
+  if (typeof result.status === 'number' && result.status !== 0) {
+    return { ok: false, reason: 'nonzero_exit' };
+  }
+  return { ok: true };
+};
+
 // Uses temp file instead of command substitution $() to avoid subshell issues:
 // 1. $() creates a non-interactive subshell where PATH may not be properly inherited
 // 2. TUI rendering fails when stdout is captured by command substitution
@@ -219,8 +382,78 @@ const bootstrap = async (): Promise<void> => {
   const args = process.argv.slice(2);
 
   if (args.includes('-v') || args.includes('--version')) {
-    // eslint-disable-next-line no-console
     console.log(getVersion());
+    return;
+  }
+
+  if (args[0] === 'update') {
+    const currentVersion = getVersion();
+    const latestVersionResult = readLatestVersionFromNpm();
+    if (!latestVersionResult.ok) {
+      if (latestVersionResult.reason === 'timeout') {
+        console.error('Failed to read the latest version from npm (timeout). Please check your network/proxy settings and try again.');
+      } else if (latestVersionResult.reason === 'spawn_failed') {
+        console.error('Failed to run npm. Please ensure npm is installed and available in your PATH.');
+      } else {
+        console.error('Failed to read the latest version from npm. Please ensure you can access the npm registry.');
+      }
+      process.exitCode = 1;
+      return;
+    }
+
+    const latestVersion = latestVersionResult.version;
+    const parsedCurrent = parseSemver(currentVersion);
+    const parsedLatest = parseSemver(latestVersion);
+    if (parsedCurrent && parsedLatest) {
+      const cmp = compareSemver(parsedLatest, parsedCurrent);
+      if (cmp <= 0) {
+        console.log(`Already up to date: ${currentVersion}`);
+        if (cmp < 0) {
+          console.log(`Current version is newer than npm latest: ${latestVersion}`);
+        }
+        return;
+      }
+    } else if (latestVersion === currentVersion) {
+      console.log(`Already up to date: ${currentVersion}`);
+      return;
+    }
+
+    console.log(`Current version: ${currentVersion}`);
+    console.log(`Latest version:  ${latestVersion}`);
+    console.log('This will update the global installation via npm: npm install -g unity-hub-cli@latest --ignore-scripts --no-fund');
+    console.log('');
+
+    if (!process.stdin.isTTY) {
+      console.error('Interactive confirmation is not available in this environment (stdin is not a TTY).');
+      process.exitCode = 1;
+      return;
+    }
+
+    if (!parsedCurrent || !parsedLatest) {
+      console.log('Warning: could not compare versions reliably; proceeding may downgrade your installation.');
+      console.log('');
+    }
+
+    const confirmed = await askConfirmation('Proceed with update? (y/n): ');
+    if (!confirmed) {
+      console.log('Update cancelled.');
+      return;
+    }
+
+    const installResult = installLatestVersionGlobally();
+    if (!installResult.ok) {
+      if (installResult.reason === 'timeout') {
+        console.error('Update failed (timeout). Please check your network/proxy settings and try again.');
+      } else if (installResult.reason === 'spawn_failed') {
+        console.error('Failed to run npm. Please ensure npm is installed and available in your PATH.');
+      } else {
+        console.error('Update failed. Please check the npm output above.');
+      }
+      process.exitCode = 1;
+      return;
+    }
+
+    console.log(`Updated to: ${latestVersion}`);
     return;
   }
 
@@ -234,27 +467,28 @@ const bootstrap = async (): Promise<void> => {
 
     const configPath = getShellConfigPath();
     if (!configPath) {
-      // eslint-disable-next-line no-console
       console.log('Unsupported shell. Please copy the function from the README into your shell config manually.');
       process.exitCode = 1;
       return;
     }
 
-    // eslint-disable-next-line no-console
     console.log(`This will install the unity-hub function to: ${configPath}\n`);
     previewShellInit();
-    // eslint-disable-next-line no-console
     console.log('');
+
+    if (!process.stdin.isTTY) {
+      console.error('Interactive confirmation is not available in this environment (stdin is not a TTY).');
+      process.exitCode = 1;
+      return;
+    }
 
     const confirmed = await askConfirmation('Proceed with installation? (y/n): ');
     if (!confirmed) {
-      // eslint-disable-next-line no-console
       console.log('Installation cancelled.');
       return;
     }
 
     const result = installShellInit();
-    // eslint-disable-next-line no-console
     console.log(result.message);
     process.exitCode = result.success ? 0 : 1;
     return;
