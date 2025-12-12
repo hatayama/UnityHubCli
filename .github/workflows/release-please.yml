@@ -5,6 +5,15 @@ on:
     branches:
       - main
   workflow_dispatch:
+    inputs:
+      mode:
+        description: "Mode: publish (default) or release"
+        required: false
+        default: "publish"
+      publish_ref:
+        description: "Publish only: git ref to publish from (e.g. unity-hub-cli-v0.20.0). Leave empty to run release-please."
+        required: false
+        default: ""
 
 permissions:
   contents: write
@@ -18,6 +27,7 @@ concurrency:
 jobs:
   release:
     name: release-please
+    if: ${{ github.event_name != 'workflow_dispatch' || inputs.mode == 'release' }}
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
@@ -47,5 +57,30 @@ jobs:
 
       - name: Publish to npm with provenance
         if: ${{ steps.release.outputs.release_created }}
+        run: npm publish --provenance --access public
+
+  publish:
+    name: publish
+    if: ${{ github.event_name == 'workflow_dispatch' && inputs.mode != 'release' }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+        with:
+          ref: ${{ inputs.publish_ref != '' && inputs.publish_ref || github.ref }}
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: '20'
+          registry-url: 'https://registry.npmjs.org'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build
+        run: npm run build
+
+      - name: Publish to npm with provenance
         run: npm publish --provenance --access public
 
