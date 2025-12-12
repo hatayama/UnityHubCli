@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.20.0](https://github.com/hatayama/UnityHubCli/compare/unity-hub-cli-v0.19.0...unity-hub-cli-v0.20.0) (2025-12-12)
+
+
+### Features
+
+* add self-update command ([#73](https://github.com/hatayama/UnityHubCli/issues/73)) ([391e07b](https://github.com/hatayama/UnityHubCli/commit/391e07be6a38dfbf5092e75d4ab38e953f095c10))
+
 ## [0.19.0](https://github.com/hatayama/UnityHubCli/compare/unity-hub-cli-v0.18.0...unity-hub-cli-v0.19.0) (2025-12-08)
 
 
