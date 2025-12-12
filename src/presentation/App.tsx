@@ -32,16 +32,15 @@ const extractRootFolder = (repository?: GitRepositoryInfo): string | undefined =
 
 
 const minimumVisibleProjectCount: number = 4;
-const defaultHintMessage =
-  `j/k Select · [o]pen [O]+Editor [i]de [q]uit [r]efresh [c]opy [f]av [s]ort [v]isibility · ^C Exit`;
- 
-
- 
-
-const getCopyTargetPath = (view: ProjectView): string => {
-  const root = view.repository?.root;
-  return root && root.length > 0 ? root : view.project.path;
+const buildDefaultHintMessage = (outputPathOnExit: boolean): string => {
+  const cLabel: string = outputPathOnExit ? 'cd' : 'copy';
+  return `j/k Select · [o]pen [O]+Editor [i]de [q]uit [r]efresh [c]${cLabel} [f]av [s]ort [v]isibility · ^C Exit`;
 };
+ 
+
+ 
+
+const getCopyTargetPath = (view: ProjectView): string => view.project.path;
 
 
 type AppProps = {
@@ -72,6 +71,10 @@ export const App: React.FC<AppProps> = ({
   const { exit } = useApp();
   const { stdout } = useStdout();
   const colors = useThemeColors();
+  const defaultHintMessage: string = useMemo(
+    () => buildDefaultHintMessage(outputPathOnExit),
+    [outputPathOnExit],
+  );
   const [projectViews, setProjectViews] = useState<readonly ProjectView[]>(projects);
   const [isSortMenuOpen, setIsSortMenuOpen] = useState(false);
   const [isVisibilityMenuOpen, setIsVisibilityMenuOpen] = useState(false);
@@ -265,13 +268,20 @@ export const App: React.FC<AppProps> = ({
   }, [index, limit, sortedProjects.length]);
 
   const copyProjectPath = useCallback(() => {
+    const actionLabel: string = outputPathOnExit ? 'cd' : 'copy';
     const projectView = sortedProjects[index];
     const projectPath = projectView ? getCopyTargetPath(projectView) : undefined;
     if (!projectPath) {
-      setHint('No project to copy');
+      setHint(`No project to ${actionLabel}`);
       setTimeout(() => {
         setHint(defaultHintMessage);
       }, 2000);
+      return;
+    }
+
+    if (outputPathOnExit) {
+      onSetExitPath?.(projectPath);
+      exit();
       return;
     }
 
@@ -288,7 +298,7 @@ export const App: React.FC<AppProps> = ({
     setTimeout(() => {
       setHint(defaultHintMessage);
     }, 2000);
-  }, [index, sortedProjects]);
+  }, [defaultHintMessage, exit, index, onSetExitPath, outputPathOnExit, sortedProjects]);
 
   const launchSelected = useCallback(async () => {
     const projectView = sortedProjects[index];
@@ -350,7 +360,7 @@ export const App: React.FC<AppProps> = ({
         setHint(defaultHintMessage);
       }, 3000);
     }
-  }, [exit, index, onLaunch, onSetExitPath, outputPathOnExit, sortedProjects]);
+  }, [defaultHintMessage, exit, index, onLaunch, onSetExitPath, outputPathOnExit, sortedProjects]);
 
   const launchSelectedWithEditor = useCallback(async () => {
     if (!onLaunchWithEditor) {
@@ -420,7 +430,7 @@ export const App: React.FC<AppProps> = ({
         setHint(defaultHintMessage);
       }, 3000);
     }
-  }, [exit, index, onLaunchWithEditor, onSetExitPath, outputPathOnExit, sortedProjects]);
+  }, [defaultHintMessage, exit, index, onLaunchWithEditor, onSetExitPath, outputPathOnExit, sortedProjects]);
 
   const launchEditorOnly = useCallback(async () => {
     if (!onLaunchEditorOnly) {
@@ -454,7 +464,7 @@ export const App: React.FC<AppProps> = ({
         setHint(defaultHintMessage);
       }, 3000);
     }
-  }, [index, onLaunchEditorOnly, sortedProjects]);
+  }, [defaultHintMessage, index, onLaunchEditorOnly, sortedProjects]);
 
   const terminateSelected = useCallback(async () => {
     const projectView = sortedProjects[index];
@@ -500,7 +510,7 @@ export const App: React.FC<AppProps> = ({
         setHint(defaultHintMessage);
       }, 3000);
     }
-  }, [index, onTerminate, sortedProjects]);
+  }, [defaultHintMessage, index, onTerminate, sortedProjects]);
 
   useEffect(() => {
     setProjectViews(projects);
@@ -566,7 +576,7 @@ export const App: React.FC<AppProps> = ({
     } finally {
       setIsRefreshing(false);
     }
-  }, [isRefreshing, onRefresh, sortedProjects]);
+  }, [defaultHintMessage, isRefreshing, onRefresh, sortedProjects]);
 
   const toggleFavoriteSelected = useCallback(async () => {
     if (!onToggleFavorite) {
@@ -609,7 +619,7 @@ export const App: React.FC<AppProps> = ({
         setHint(defaultHintMessage);
       }, 3000);
     }
-  }, [index, onToggleFavorite, sortedProjects]);
+  }, [defaultHintMessage, index, onToggleFavorite, sortedProjects]);
 
   useInput((input, key) => {
     if (isSortMenuOpen) {
