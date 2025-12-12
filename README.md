@@ -46,7 +46,7 @@ On standalone Git Bash (MinTTY), raw mode is not supported; use PowerShell/CMD/W
 | `i` | Launch external editor only |
 | `q` | Quit Unity for selected project |
 | `r` | Refresh project list |
-| `c` | Copy project path to clipboard |
+| `c` | Copy project path to clipboard (when launched via the `unity-hub` shell function, it will `cd` into the project directory and exit) |
 | `s` | Open sort settings panel |
 | `v` | Open visibility settings panel |
 | `Ctrl + C` | Exit |
