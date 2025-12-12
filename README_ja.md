@@ -60,6 +60,7 @@ PowerShell / CMD で動作します。Git Bash は ConPTY ベースのターミ�
 - `--no-git-root-name`: Gitリポジトリのルートフォルダ名ではなく、Unityプロジェクトのタイトルを表示します
 - `--shell-init`: 自動 `cd` 統合用のシェル関数をインストールします（確認プロンプト付き）。
 - `--shell-init --dry-run`: シェル関数をプレビュー表示します（インストールはしません）。
+- `update`: グローバルインストール済みの `unity-hub-cli` を最新バージョンに更新します（確認プロンプト後に `npm install -g unity-hub-cli@latest --ignore-scripts --no-fund` を実行）。
 
 ## シェル統合
 

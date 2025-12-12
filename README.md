@@ -60,6 +60,7 @@ The display includes Git branch (if present), Unity version, project path, and l
 - `--no-git-root-name`: Display Unity project titles instead of Git repository root folder names.
 - `--shell-init`: Install shell function for automatic `cd` integration (with confirmation prompt).
 - `--shell-init --dry-run`: Preview the shell function without installing.
+- `update`: Update the globally installed `unity-hub-cli` to the latest version (with a confirmation prompt). It runs: `npm install -g unity-hub-cli@latest --ignore-scripts --no-fund`.
 
 ## Shell Integration
 

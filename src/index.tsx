@@ -1,4 +1,4 @@
-import { execSync } from 'node:child_process';
+import { execSync, spawnSync } from 'node:child_process';
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { homedir } from 'node:os';
 import { dirname, join } from 'node:path';
@@ -80,13 +80,9 @@ const askConfirmation = (question: string): Promise<boolean> => {
 
 const previewShellInit = (): void => {
   const configPath = getShellConfigPath();
-  // eslint-disable-next-line no-console
   console.log('=== Shell Integration Preview ===\n');
-  // eslint-disable-next-line no-console
   console.log(`Target file: ${configPath ?? 'Unknown (unsupported shell)'}\n`);
-  // eslint-disable-next-line no-console
   console.log('Content to be added:\n');
-  // eslint-disable-next-line no-console
   console.log(getShellInitScriptWithMarkers());
 };
 
@@ -156,6 +152,50 @@ const getUnityHubCliPath = (): string => {
   return 'unity-hub-cli';
 };
 
+const getNpmCommand = (): string => {
+  return process.platform === 'win32' ? 'npm.cmd' : 'npm';
+};
+
+const readLatestVersionFromNpm = (): { readonly ok: true; readonly version: string } | { readonly ok: false } => {
+  const npmCommand = getNpmCommand();
+  const result = spawnSync(npmCommand, ['view', 'unity-hub-cli', 'version'], {
+    encoding: 'utf-8',
+    stdio: ['ignore', 'pipe', 'pipe'],
+  });
+
+  if (result.error) {
+    return { ok: false };
+  }
+  if (typeof result.status === 'number' && result.status !== 0) {
+    return { ok: false };
+  }
+
+  const version = result.stdout.trim();
+  if (!version) {
+    return { ok: false };
+  }
+  return { ok: true, version };
+};
+
+const installLatestVersionGlobally = (): { readonly ok: true } | { readonly ok: false } => {
+  const npmCommand = getNpmCommand();
+  const result = spawnSync(
+    npmCommand,
+    ['install', '-g', 'unity-hub-cli@latest', '--ignore-scripts', '--no-fund'],
+    {
+      stdio: 'inherit',
+    },
+  );
+
+  if (result.error) {
+    return { ok: false };
+  }
+  if (typeof result.status === 'number' && result.status !== 0) {
+    return { ok: false };
+  }
+  return { ok: true };
+};
+
 // Uses temp file instead of command substitution $() to avoid subshell issues:
 // 1. $() creates a non-interactive subshell where PATH may not be properly inherited
 // 2. TUI rendering fails when stdout is captured by command substitution
@@ -219,8 +259,44 @@ const bootstrap = async (): Promise<void> => {
   const args = process.argv.slice(2);
 
   if (args.includes('-v') || args.includes('--version')) {
-    // eslint-disable-next-line no-console
     console.log(getVersion());
+    return;
+  }
+
+  if (args[0] === 'update') {
+    const currentVersion = getVersion();
+    const latestVersionResult = readLatestVersionFromNpm();
+    if (!latestVersionResult.ok) {
+      console.error('Failed to read the latest version from npm. Please ensure npm is installed and you can access the npm registry.');
+      process.exitCode = 1;
+      return;
+    }
+
+    const latestVersion = latestVersionResult.version;
+    if (latestVersion === currentVersion) {
+      console.log(`Already up to date: ${currentVersion}`);
+      return;
+    }
+
+    console.log(`Current version: ${currentVersion}`);
+    console.log(`Latest version:  ${latestVersion}`);
+    console.log('This will update the global installation via npm: npm install -g unity-hub-cli@latest --ignore-scripts --no-fund');
+    console.log('');
+
+    const confirmed = await askConfirmation('Proceed with update? (y/n): ');
+    if (!confirmed) {
+      console.log('Update cancelled.');
+      return;
+    }
+
+    const installResult = installLatestVersionGlobally();
+    if (!installResult.ok) {
+      console.error('Update failed. Please check the npm output above.');
+      process.exitCode = 1;
+      return;
+    }
+
+    console.log(`Updated to: ${latestVersion}`);
     return;
   }
 
@@ -234,27 +310,22 @@ const bootstrap = async (): Promise<void> => {
 
     const configPath = getShellConfigPath();
     if (!configPath) {
-      // eslint-disable-next-line no-console
       console.log('Unsupported shell. Please copy the function from the README into your shell config manually.');
       process.exitCode = 1;
       return;
     }
 
-    // eslint-disable-next-line no-console
     console.log(`This will install the unity-hub function to: ${configPath}\n`);
     previewShellInit();
-    // eslint-disable-next-line no-console
     console.log('');
 
     const confirmed = await askConfirmation('Proceed with installation? (y/n): ');
     if (!confirmed) {
-      // eslint-disable-next-line no-console
       console.log('Installation cancelled.');
       return;
     }
 
     const result = installShellInit();
-    // eslint-disable-next-line no-console
     console.log(result.message);
     process.exitCode = result.success ? 0 : 1;
     return;
