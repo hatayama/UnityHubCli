@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.21.0](https://github.com/hatayama/UnityHubCli/compare/unity-hub-cli-v0.20.0...unity-hub-cli-v0.21.0) (2025-12-12)
+
+
+### Features
+
+* implement OIDC trusted publishing for npm ([#76](https://github.com/hatayama/UnityHubCli/issues/76)) ([f94dd5e](https://github.com/hatayama/UnityHubCli/commit/f94dd5e1f0e13a056bd37e1ce09856519e3235e1))
+
 ## [0.20.0](https://github.com/hatayama/UnityHubCli/compare/unity-hub-cli-v0.19.0...unity-hub-cli-v0.20.0) (2025-12-12)
 
 
