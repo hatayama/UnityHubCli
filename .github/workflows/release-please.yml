@@ -55,9 +55,29 @@ jobs:
         if: ${{ steps.release.outputs.release_created }}
         run: npm run build
 
+      - name: Debug npm auth (safe)
+        if: ${{ steps.release.outputs.release_created }}
+        shell: bash
+        run: |
+          echo "npm version: $(npm --version)"
+          if [ -n "${NODE_AUTH_TOKEN:-}" ]; then
+            echo "NODE_AUTH_TOKEN is set"
+          else
+            echo "NODE_AUTH_TOKEN is not set"
+          fi
+          echo "npm userconfig: $(npm config get userconfig)"
+          if [ -f "$HOME/.npmrc" ]; then
+            echo "~/.npmrc exists"
+          else
+            echo "~/.npmrc does not exist"
+          fi
+
       - name: Publish to npm with provenance
         if: ${{ steps.release.outputs.release_created }}
-        run: npm publish --provenance --access public
+        shell: bash
+        run: |
+          printf "\n" > "$RUNNER_TEMP/empty.npmrc"
+          NODE_AUTH_TOKEN="" NPM_TOKEN="" npm publish --provenance --access public --userconfig "$RUNNER_TEMP/empty.npmrc"
 
   publish:
     name: publish
@@ -81,6 +101,25 @@ jobs:
       - name: Build
         run: npm run build
 
+      - name: Debug npm auth (safe)
+        shell: bash
+        run: |
+          echo "npm version: $(npm --version)"
+          if [ -n "${NODE_AUTH_TOKEN:-}" ]; then
+            echo "NODE_AUTH_TOKEN is set"
+          else
+            echo "NODE_AUTH_TOKEN is not set"
+          fi
+          echo "npm userconfig: $(npm config get userconfig)"
+          if [ -f "$HOME/.npmrc" ]; then
+            echo "~/.npmrc exists"
+          else
+            echo "~/.npmrc does not exist"
+          fi
+
       - name: Publish to npm with provenance
-        run: npm publish --provenance --access public
+        shell: bash
+        run: |
+          printf "\n" > "$RUNNER_TEMP/empty.npmrc"
+          NODE_AUTH_TOKEN="" NPM_TOKEN="" npm publish --provenance --access public --userconfig "$RUNNER_TEMP/empty.npmrc"
 
