@@ -39,7 +39,7 @@
   "dependencies": {
     "chalk": "5.6.2",
     "clipboardy": "5.0.2",
-    "ink": "6.5.1",
+    "ink": "6.6.0",
     "react": "19.2.3"
   },
   "engines": {
