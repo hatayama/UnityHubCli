@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.22.0](https://github.com/hatayama/UnityHubCli/compare/unity-hub-cli-v0.21.0...unity-hub-cli-v0.22.0) (2026-02-02)
+
+
+### Features
+
+* integrate launch-unity module for Unity launching ([#95](https://github.com/hatayama/UnityHubCli/issues/95)) ([5944159](https://github.com/hatayama/UnityHubCli/commit/5944159fac4fbd960b0106099ea5b32e58faf177))
+
 ## [0.21.0](https://github.com/hatayama/UnityHubCli/compare/unity-hub-cli-v0.20.0...unity-hub-cli-v0.21.0) (2025-12-12)
 
 
