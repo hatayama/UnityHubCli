@@ -1,12 +1,16 @@
+import {
+  launch as launchUnity,
+  updateLastModifiedIfExists,
+  type LaunchResolvedOptions,
+} from 'launch-unity';
+
 import type { GitRepositoryInfo, UnityProject } from '../domain/models.js';
 
 import type {
   ExternalEditorResult,
-  IEditorPathResolver,
   IExternalEditorLauncher,
   IExternalEditorPathReader,
   IGitRepositoryInfoReader,
-  IProcessLauncher,
   IUnityHubProjectsReader,
   IUnityProcessLockChecker,
   IUnityProcessReader,
@@ -78,29 +82,32 @@ export class LaunchCancelledError extends Error {
   }
 }
 
+async function launchUnitySilently(opts: LaunchResolvedOptions): Promise<void> {
+  const originalLog: typeof console.log = console.log;
+  console.log = (): void => {};
+  try {
+    await launchUnity(opts);
+  } finally {
+    console.log = originalLog;
+  }
+}
+
 export class LaunchProjectUseCase {
-  constructor(
-    private readonly editorPathResolver: IEditorPathResolver,
-    private readonly processLauncher: IProcessLauncher,
-    private readonly unityHubProjectsReader: IUnityHubProjectsReader,
-    private readonly unityProjectOptionsReader: IUnityProjectOptionsReader,
-    private readonly unityProcessLockChecker: IUnityProcessLockChecker,
-  ) {}
+  constructor(private readonly unityProcessLockChecker: IUnityProcessLockChecker) {}
 
   async execute(project: UnityProject): Promise<void> {
-    const lockDecision = await this.unityProcessLockChecker.check(project.path);
+    const lockDecision: 'allow' | 'skip' = await this.unityProcessLockChecker.check(project.path);
     if (lockDecision === 'skip') {
       throw new LaunchCancelledError();
     }
 
-    const editorPath = await this.editorPathResolver.resolve(project.version);
-    const extraArgs = await this.unityProjectOptionsReader.readCliArgs(project.path);
-    const launchArgs = ['-projectPath', project.path, ...extraArgs];
-
-    await this.processLauncher.launch(editorPath, launchArgs, {
-      detached: true,
+    await launchUnitySilently({
+      projectPath: project.path,
+      unityArgs: [],
+      unityVersion: project.version.value,
     });
-    await this.unityHubProjectsReader.updateLastModified(project.path, new Date());
+
+    await updateLastModifiedIfExists(project.path, new Date());
   }
 }
 

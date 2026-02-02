@@ -11,12 +11,9 @@ import { render } from 'ink';
 import React from 'react';
 
 import { LaunchEditorOnlyUseCase, LaunchProjectUseCase, LaunchWithEditorUseCase, ListProjectsUseCase, TerminateProjectUseCase } from './application/usecases.js';
-import { MacEditorPathResolver } from './infrastructure/editor.js';
-import { WinEditorPathResolver } from './infrastructure/editor.win.js';
 import { MacExternalEditorLauncher, MacExternalEditorPathReader } from './infrastructure/externalEditor.js';
 import { WinExternalEditorLauncher, WinExternalEditorPathReader } from './infrastructure/externalEditor.win.js';
 import { GitRepositoryInfoReader } from './infrastructure/git.js';
-import { NodeProcessLauncher } from './infrastructure/process.js';
 import type { TerminalTheme } from './infrastructure/terminalTheme.js';
 import { detectTerminalTheme } from './infrastructure/terminalTheme.js';
 import { MacUnityHubProjectsReader } from './infrastructure/unityhub.js';
@@ -509,17 +506,9 @@ const bootstrap = async (): Promise<void> => {
     lockStatusReader,
     unityProcessReader,
   );
-  const editorPathResolver = isWindows ? new WinEditorPathResolver() : new MacEditorPathResolver();
-  const processLauncher = new NodeProcessLauncher();
   const lockChecker = new UnityLockChecker(unityProcessReader, unityTempDirectoryCleaner);
   const unityProcessTerminator = isWindows ? new WinUnityProcessTerminator() : new MacUnityProcessTerminator();
-  const launchProjectUseCase = new LaunchProjectUseCase(
-    editorPathResolver,
-    processLauncher,
-    unityHubReader,
-    unityHubReader,
-    lockChecker,
-  );
+  const launchProjectUseCase = new LaunchProjectUseCase(lockChecker);
   const terminateProjectUseCase = new TerminateProjectUseCase(
     unityProcessReader,
     unityProcessTerminator,
