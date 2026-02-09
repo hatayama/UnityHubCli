@@ -38,9 +38,9 @@
   ],
   "dependencies": {
     "chalk": "5.6.2",
-    "clipboardy": "5.2.0",
+    "clipboardy": "5.2.1",
     "ink": "6.6.0",
-    "launch-unity": "0.13.0",
+    "launch-unity": "0.15.0",
     "react": "19.2.4"
   },
   "engines": {
